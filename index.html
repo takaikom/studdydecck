@@ -1215,6 +1215,10 @@ function renderStats(){
 // ── タブ ──
 function switchTab(tab){
   state.currentTab=tab;
+  // s-home が表示されていなければ切り替える
+  if(!document.getElementById('s-home').classList.contains('active')){
+    showScreen('s-home');
+  }
   ['decks','stats','settings'].forEach(t=>{
     const panel=document.getElementById('tab-'+t);
     const btn=document.getElementById('tab-btn-'+t);
