@@ -412,7 +412,8 @@ input[type=file]{display:none}
         <span style="font-size:14px;color:var(--text2);flex:1">出題数</span>
         <input type="number" id="inp-count" min="1" placeholder="全問"
           style="width:80px;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:6px 10px;font-size:14px;color:var(--text);outline:none;text-align:center;font-family:inherit"
-          onfocus="this.style.borderColor='var(--accent3)'" onblur="this.style.borderColor='var(--surface3)'">
+          onfocus="this.style.borderColor='var(--accent3)'" onblur="this.style.borderColor='var(--surface3)'"
+          onkeydown="if(event.key==='Enter'){this.blur();startStudy();}">
         <span style="font-size:13px;color:var(--text3)">問（空欄=全問）</span>
       </div>
     </div>
@@ -430,48 +431,45 @@ input[type=file]{display:none}
   <div class="study-progress-bar"><div class="study-progress-fill" id="study-prog-fill"></div></div>
   <div class="study-counter" id="study-counter"></div>
 
-  <!-- フラッシュカード -->
-  <div id="mode-flashcard" style="flex:1;display:flex;flex-direction:column;display:none">
-    <div class="flashcard-area">
-      <div class="flashcard" id="flashcard" onclick="flipCard()">
-        <div class="card-face card-front">
-          <div class="card-label">おもて</div>
-          <div class="card-main" id="fc-front"></div>
-          <div class="card-hint" id="fc-hint"></div>
-          <div class="card-tap">タップしてめくる →</div>
-        </div>
-        <div class="card-face card-back">
-          <div class="card-label">うら</div>
-          <div class="card-main" id="fc-back"></div>
-          <div class="card-sub" id="fc-explanation"></div>
-        </div>
+<!-- フラッシュカード -->
+<div id="mode-flashcard" style="flex:1;display:flex;flex-direction:column;display:none">
+  <div class="flashcard-area">
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="card-label">おもて</div>
+        <div class="card-main" id="fc-front"></div>
+        <div class="card-tap">タップしてめくる →</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-label">うら</div>
+        <div class="card-main" id="fc-back"></div>
+        <div class="card-sub" id="fc-explanation"></div>
       </div>
     </div>
-    <div class="flash-btns">
-      <button class="btn btn-danger" onclick="answerFlash(false)">✗ 不正解</button>
-      <button class="btn btn-success" onclick="answerFlash(true)">✓ 正解</button>
-    </div>
   </div>
+  <!-- ④ ヒントはカード外・タップで表示 -->
+  <div id="fc-hint-wrap" style="text-align:center;padding:0 16px 4px;flex-shrink:0;display:none">
+    <button id="fc-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
+    <div id="fc-hint" style="display:none;margin-top:8px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5"></div>
+  </div>
+  <div class="flash-btns">
+    <button class="btn btn-secondary" onclick="prevCard()">← 戻る</button>
+    <button class="btn btn-danger" onclick="answerFlash(false)">✗ 不正解</button>
+    <button class="btn btn-success" onclick="answerFlash(true)">✓ 正解</button>
+  </div>
+</div>
 
-  <!-- 選択肢 -->
-  <div id="mode-choice" style="flex:1;display:flex;flex-direction:column;display:none;overflow:hidden">
-    <div style="position:relative;flex-shrink:0">
-      <div class="choice-question" id="choice-q"></div>
-      <!-- 次へボタン：問題文とAの間・右端 -->
-      <button id="choice-next-btn" class="btn btn-primary btn-sm"
-        style="display:none;position:absolute;bottom:-18px;right:16px;z-index:5;padding:7px 16px;font-size:13px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.35)"
-        onclick="nextCard()">次へ →</button>
-    </div>
-    <!-- Aの上に余白（ボタン分） -->
-    <div id="choice-next-spacer" style="height:0;flex-shrink:0;transition:height .15s"></div>
-    <div class="choices-list" id="choices-list"></div>
-    <!-- ヒントボタン（回答前も表示可） -->
-    <div id="choice-hint-wrap" style="padding:0 16px 4px;flex-shrink:0;display:none">
-      <button id="choice-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px" onclick="toggleChoiceHint()">💡 ヒントを見る</button>
-      <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5"></div>
-    </div>
-    <div class="explain-banner" id="choice-explain" style="display:none"></div>
+<!-- 選択肢 -->
+<div id="mode-choice" style="flex:1;display:flex;flex-direction:column;display:none;overflow:hidden">
+  <div class="choice-question" id="choice-q"></div>
+  <!-- 次へ・戻るボタン行：問題文とAの間、右端に次へ／左端に戻る -->
+  <div id="choice-nav-row" style="display:none;justify-content:space-between;align-items:center;padding:4px 16px 4px;flex-shrink:0">
+    <button class="btn btn-secondary btn-sm" style="font-size:13px;padding:7px 14px;border-radius:20px" onclick="prevCard()">← 戻る</button>
+    <button id="choice-next-btn" class="btn btn-primary btn-sm" style="font-size:13px;padding:7px 16px;border-radius:20px" onclick="nextCard()">次へ →</button>
   </div>
+  <div class="choices-list" id="choices-list"></div>
+  <!-- ヒント（Dの直下）と解説はchoices-listの末尾にJS側で挿入 -->
+</div>
 
   <!-- タイピング -->
   <div id="mode-typing" style="flex:1;display:flex;flex-direction:column;display:none">
@@ -485,8 +483,9 @@ input[type=file]{display:none}
     </div>
     <div style="flex:1"></div>
     <div class="study-nav">
-      <button class="btn btn-secondary" onclick="checkTyping()">確認</button>
-      <button class="btn btn-primary" id="typing-next-btn" onclick="nextCard()" style="display:none">次へ →</button>
+      <button class="btn btn-secondary" id="desc-show-btn" onclick="showModelAnswer()">模範解答を見る</button>
+      <button class="btn btn-danger" id="desc-ng-btn" onclick="answerDesc(false)" style="display:none">✗ あとで復習</button>
+      <button class="btn btn-success" id="desc-ok-btn" onclick="answerDesc(true)" style="display:none">✓ 理解した</button>
     </div>
   </div>
 
@@ -494,7 +493,12 @@ input[type=file]{display:none}
   <div id="mode-descriptive" style="flex:1;display:flex;flex-direction:column;display:none;overflow:hidden">
     <div class="desc-question scroll" style="flex:1">
       <div class="desc-q-text" id="desc-q"></div>
-      <textarea class="desc-textarea" id="desc-textarea" placeholder="ここに答えを書いてください…" rows="4"></textarea>
+      <div style="position:relative">
+        <textarea class="desc-textarea" id="desc-textarea" placeholder="ここに答えを書いてください…" rows="4"></textarea>
+        <button id="desc-mic-btn" onclick="toggleSpeech()"
+          style="position:absolute;bottom:10px;right:10px;background:var(--surface3);border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--trans)"
+          title="音声入力">🎤</button>
+      </div>
       <div class="desc-model-ans" id="desc-model">
         <strong>📖 模範解答</strong>
         <div id="desc-model-text"></div>
@@ -502,7 +506,8 @@ input[type=file]{display:none}
         <div id="desc-checkpoints" style="margin-top:4px"></div>
       </div>
     </div>
-    <div class="study-nav">
+    <div class="study-nav" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="prevCard()">← 戻る</button>
       <button class="btn btn-secondary" id="desc-show-btn" onclick="showModelAnswer()">模範解答を見る</button>
       <button class="btn btn-success" id="desc-ok-btn" onclick="answerDesc(true)" style="display:none">✓ 理解した</button>
       <button class="btn btn-danger" id="desc-ng-btn" onclick="answerDesc(false)" style="display:none">✗ 未理解</button>
@@ -835,8 +840,68 @@ function renderFlashcard(card){
   state.cardFlipped=false;
   document.getElementById('fc-front').textContent=card.front||card.front_question||'';
   document.getElementById('fc-back').textContent=card.back||card.back_answer||'';
-  document.getElementById('fc-hint').textContent=card.hint||'';
   document.getElementById('fc-explanation').textContent=card.explanation||'';
+  // ④ ヒントをカード外に移動・初期非表示
+  const hintWrap=document.getElementById('fc-hint-wrap');
+  const hintEl=document.getElementById('fc-hint');
+  const hintBtn=document.getElementById('fc-hint-btn');
+  if(card.hint){
+    hintEl.textContent='ヒント: '+card.hint;
+    hintEl.style.display='none';
+    hintBtn.textContent='💡 ヒントを見る';
+    hintWrap.style.display='block';
+  }else{
+    hintWrap.style.display='none';
+  }
+}
+
+function toggleFlashHint(){
+  const el=document.getElementById('fc-hint');
+  const btn=document.getElementById('fc-hint-btn');
+  if(el.style.display==='none'){
+    el.style.display='block';
+    btn.textContent='💡 ヒントを隠す';
+  }else{
+    el.style.display='none';
+    btn.textContent='💡 ヒントを見る';
+  }
+}
+
+// ── 音声入力（記述式） ──
+let _speechRec = null;
+function toggleSpeech(){
+  const btn = document.getElementById('desc-mic-btn');
+  if(_speechRec){
+    _speechRec.stop();
+    _speechRec = null;
+    btn.style.background = 'var(--surface3)';
+    btn.textContent = '🎤';
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast('このブラウザは音声入力に未対応です'); return; }
+  _speechRec = new SR();
+  _speechRec.lang = 'ja-JP';
+  _speechRec.interimResults = false;
+  _speechRec.onresult = e => {
+    const text = e.results[0][0].transcript;
+    const ta = document.getElementById('desc-textarea');
+    ta.value = ta.value ? ta.value + ' ' + text : text;
+  };
+  _speechRec.onend = () => {
+    _speechRec = null;
+    btn.style.background = 'var(--surface3)';
+    btn.textContent = '🎤';
+  };
+  _speechRec.onerror = () => {
+    _speechRec = null;
+    btn.style.background = 'var(--surface3)';
+    btn.textContent = '🎤';
+    toast('音声入力エラー。マイクの許可を確認してください');
+  };
+  _speechRec.start();
+  btn.style.background = 'var(--accent)';
+  btn.textContent = '⏹';
 }
 
 function flipCard(){
@@ -851,29 +916,21 @@ function answerFlash(correct){
 
 function renderChoice(card){
   document.getElementById('choice-q').textContent=card.front_question||card.question||'';
-  document.getElementById('choice-explain').className='explain-banner';
-  document.getElementById('choice-explain').style.display='none';
-  // 次へボタンを非表示
-  const nextBtn=document.getElementById('choice-next-btn');
-  nextBtn.style.display='none';
-  document.getElementById('choice-next-spacer').style.height='0';
+  document.getElementById('choice-nav-row').style.display='none';
   const choices=card.choices||[];
   const list=document.getElementById('choices-list');
+  // 選択肢ボタンを生成（ヒント・解説はDの直後にプレースホルダとして挿入）
   list.innerHTML=choices.map((c,i)=>
     `<button class="choice-option" onclick="selectChoice(${i})">${String.fromCharCode(65+i)}. ${c}</button>`
-  ).join('');
-  // ヒントボタン（hintがある場合のみ表示）
-  const hintWrap=document.getElementById('choice-hint-wrap');
-  const hintBtn=document.getElementById('choice-hint-btn');
-  const hintText=document.getElementById('choice-hint-text');
-  if(card.hint){
-    hintWrap.style.display='block';
-    hintBtn.textContent='💡 ヒントを見る';
-    hintText.style.display='none';
-    hintText.textContent='ヒント: '+card.hint;
-  }else{
-    hintWrap.style.display='none';
-  }
+  ).join('')
+  // ③ Dの直下にヒントと解説エリアを配置
+  +(card.hint
+    ? `<div id="choice-hint-wrap" style="margin:4px 0 2px">
+         <button id="choice-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px" onclick="toggleChoiceHint()">💡 ヒントを見る</button>
+         <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5"></div>
+       </div>`
+    : '<div id="choice-hint-wrap" style="display:none"></div>')
+  +'<div class="explain-banner" id="choice-explain" style="display:none"></div>';
 }
 
 function selectChoice(idx){
@@ -886,17 +943,15 @@ function selectChoice(idx){
     if(i===idx&&!correct) b.classList.add('wrong');
     if(i===idx&&correct) b.classList.add('correct');
   });
-  // explanationをDの直下（choices-listの後）に表示
+  // ③ Dの直下の解説エリアに表示
   if(card.explanation){
     const exp=document.getElementById('choice-explain');
     exp.textContent='💡 '+card.explanation;
     exp.className='explain-banner show';
     exp.style.display='block';
   }
-  // 次へボタンを表示（問題文とAの間・右端）
-  const nextBtn=document.getElementById('choice-next-btn');
-  nextBtn.style.display='block';
-  document.getElementById('choice-next-spacer').style.height='28px';
+  // ② 次へ・戻るボタン行を表示
+  document.getElementById('choice-nav-row').style.display='flex';
   recordResult(card, correct);
 }
 
@@ -964,7 +1019,10 @@ function answerDesc(correct){
 }
 
 function recordResult(card, correct){
-  state.studyResults.push({card, correct});
+  // 同カードの既存記録を上書き（戻って再回答した場合）
+  const existing=state.studyResults.findIndex(r=>r.card.id===card.id);
+  if(existing>=0) state.studyResults[existing]={card,correct};
+  else state.studyResults.push({card,correct});
   const prog = loadProgress();
   const uid = state.currentUser?.id;
   if(!prog[uid]) prog[uid]={};
@@ -978,6 +1036,12 @@ function recordResult(card, correct){
 
 function nextCard(){
   state.studyIndex++;
+  showStudyCard();
+}
+
+function prevCard(){
+  if(state.studyIndex<=0) return;
+  state.studyIndex--;
   showStudyCard();
 }
 
@@ -1171,7 +1235,7 @@ function showDialog(title, msg, hasInput, cb, prefill=''){
       <button class="btn btn-secondary btn-full" onclick="closeDialog()">キャンセル</button>`;
     window._dialogCb=(ok)=>{ if(ok) cb(inp.value); };
   }else{
-    btns.innerHTML=`<button class="btn btn-danger btn-full" onclick="closeDialog(true)">実行</button>
+    btns.innerHTML=`<button class="btn btn-danger btn-full" onclick="closeDialog(true)"終了</button>
       <button class="btn btn-secondary btn-full" onclick="closeDialog()">キャンセル</button>`;
     window._dialogCb=(ok)=>cb(ok);
   }
