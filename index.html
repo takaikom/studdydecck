@@ -361,18 +361,22 @@ input[type=file]{display:none}
       </div>
     </div>
   </div>
-  <div class="tab-bar">
-    <button class="tab-item active" id="tab-btn-decks" onclick="switchTab('decks')">
-      <span class="tab-icon">📚</span>デッキ
-    </button>
-    <button class="tab-item" id="tab-btn-stats" onclick="switchTab('stats')">
-      <span class="tab-icon">📊</span>統計
-    </button>
-    <button class="tab-item" id="tab-btn-settings" onclick="switchTab('settings')">
-      <span class="tab-icon">⚙️</span>設定
-    </button>
-  </div>
 </div>
+
+<!-- ══ 共通タブバー ══ -->
+<div class="tab-bar" id="global-tab-bar">
+  <button class="tab-item active" id="tab-btn-decks" onclick="switchTab('decks')">
+    <span class="tab-icon">📚</span>デッキ
+  </button>
+  <button class="tab-item" id="tab-btn-stats" onclick="switchTab('stats')">
+    <span class="tab-icon">📊</span>統計
+  </button>
+  <button class="tab-item" id="tab-btn-settings" onclick="switchTab('settings')">
+    <span class="tab-icon">⚙️</span>設定
+  </button>
+</div>
+
+<!-- ══ S2: デッキ詳細 ══ -->
 
 <!-- ══ S2: デッキ詳細 ══ -->
 <div class="screen" id="s-deck">
@@ -1231,6 +1235,9 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='s-home'){ renderDeckList(); renderSyncBar(); }
+  // タブバーはホームとデッキ詳細のみ表示、出題中・結果画面は非表示
+  const tabBar = document.getElementById('global-tab-bar');
+  if(tabBar) tabBar.style.display = (id==='s-home'||id==='s-deck') ? 'flex' : 'none';
 }
 
 // ── ダイアログ ──
