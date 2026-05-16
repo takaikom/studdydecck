@@ -349,6 +349,11 @@ input[type=file]{display:none}
           <p style="font-size:13px;color:var(--text2);margin-bottom:12px">全ての成績データをリセットします</p>
           <button class="btn btn-danger btn-sm" onclick="confirmReset()">成績をリセット</button>
         </div>
+        <div class="section-title">アプリ更新</div>
+        <div class="card" style="margin-bottom:12px">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6">画面が古いまま変わらない場合に実行してください</p>
+          <button class="btn btn-secondary btn-sm" onclick="clearCacheAndReload()">🔄 最新版に更新</button>
+        </div>
         <div class="section-title">アプリ情報</div>
         <div class="card">
           <p style="font-size:13px;color:var(--text2)">StudyDeck v2.1<br>GAS連携対応 / オフライン対応 PWA</p>
@@ -1259,6 +1264,20 @@ function confirmReset(){
 
 // ── Toast ──
 let toastTimer;
+function clearCacheAndReload() {
+  if (!confirm('キャッシュを削除してアプリを最新版に更新しますか？')) return;
+  if ('caches' in window) {
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations()
+            .then(regs => Promise.all(regs.map(r => r.unregister())))
+            .then(() => location.reload(true));
+        } else { location.reload(true); }
+      });
+  } else { location.reload(true); }
+}
+
 function toast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg;
