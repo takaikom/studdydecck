@@ -1246,7 +1246,7 @@ function showDialog(title, msg, hasInput, cb, prefill=''){
       <button class="btn btn-secondary btn-full" onclick="closeDialog()">キャンセル</button>`;
     window._dialogCb=(ok)=>{ if(ok) cb(inp.value); };
   }else{
-    btns.innerHTML=`<button class="btn btn-danger btn-full" onclick="closeDialog(true)"終了</button>
+    btns.innerHTML=`<button class="btn btn-danger btn-full" onclick="closeDialog(true)">終了</button>
       <button class="btn btn-secondary btn-full" onclick="closeDialog()">キャンセル</button>`;
     window._dialogCb=(ok)=>cb(ok);
   }
