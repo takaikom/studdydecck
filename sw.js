@@ -4,8 +4,8 @@ const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './image_192.png',
-  './image_512.png'
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
 // インストール: アセットをキャッシュ
