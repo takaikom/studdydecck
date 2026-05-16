@@ -7,13 +7,9 @@
 <meta name="mobile-web-app-capable" content="true">
 <meta name="apple-mobile-web-app-capable" content="true">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>StudyDeck v2</title>
-<link rel="manifest" href="#" id="manifest-link">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
-
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="apple-touch-icon" href="image_192.png">
+<title>StudyDeck</title>
+<link rel="manifest" href="manifest.json">
 <style>
 :root{
   --bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#16213e;--bg4:#0d3b66;
@@ -109,6 +105,10 @@ html,body{height:100%;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;back
 .user-stats{font-size:11px;color:var(--text2);margin-top:3px}
 .user-add{background:var(--surface2);border:2px dashed var(--surface3);cursor:pointer}
 .user-add .user-avatar{background:var(--surface3);color:var(--text3);font-size:28px}
+.user-edit-btn{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.25);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;opacity:0;transition:opacity .2s;padding:0;line-height:1}
+.user-tile:hover .user-edit-btn{opacity:1}
+.user-tile:active .user-edit-btn{opacity:1}
+@media (hover:none){.user-edit-btn{opacity:.6}}
 
 /* ══ スクリーン1: ホーム ══ */
 .deck-item{display:flex;align-items:center;gap:12px;cursor:pointer}
@@ -281,9 +281,6 @@ input[type=file]{display:none}
     <p>学習するユーザーを選んでください</p>
   </div>
   <div class="user-grid" id="user-grid"></div>
-  <div style="padding:0 16px 24px">
-    <button class="btn btn-primary btn-full btn-lg" onclick="selectUser()">▶ 開始</button>
-  </div>
 </div>
 
 <!-- ══ S1: ホーム ══ -->
@@ -598,7 +595,8 @@ function renderUserGrid(){
   grid.innerHTML = state.users.map(u=>{
     const up = prog[u.id]||{};
     const sessions = Object.values(up).reduce((a,d)=>a+(d.sessions||0),0);
-    return `<div class="user-tile" data-uid="${u.id}" onclick="selectTile('${u.id}')">
+    return `<div class="user-tile" data-uid="${u.id}" onclick="selectAndGo('${u.id}')">
+      <button class="user-edit-btn" onclick="event.stopPropagation();promptRenameUser('${u.id}')" title="名前を変更">✏️</button>
       <div class="user-avatar" style="background:${u.color}22;color:${u.color}">${u.icon}</div>
       <div class="user-name">${u.name}</div>
       <div class="user-stats">${sessions}セッション</div>
@@ -615,6 +613,29 @@ function selectTile(uid){
   state.currentUser = state.users.find(u=>u.id===uid);
   document.querySelectorAll('.user-tile').forEach(t=>t.classList.remove('selected'));
   document.querySelector(`[data-uid="${uid}"]`)?.classList.add('selected');
+}
+
+function selectAndGo(uid){
+  state.currentUser = state.users.find(u=>u.id===uid);
+  document.querySelectorAll('.user-tile').forEach(t=>t.classList.remove('selected'));
+  document.querySelector(`[data-uid="${uid}"]`)?.classList.add('selected');
+  selectUser();
+}
+
+function promptRenameUser(uid){
+  const user = state.users.find(u=>u.id===uid);
+  if(!user) return;
+  showDialog('名前を変更', `「${user.name}」の新しい名前を入力`, true, (newName)=>{
+    if(!newName.trim()) return;
+    user.name = newName.trim();
+    saveUsers();
+    renderUserGrid();
+    // ホーム画面に表示中なら更新
+    if(state.currentUser?.id===uid){
+      document.getElementById('home-user-name').textContent = user.icon+' '+user.name;
+    }
+    toast('名前を変更しました');
+  }, user.name);
 }
 
 function selectUser(){
@@ -1080,12 +1101,12 @@ function showScreen(id){
 }
 
 // ── ダイアログ ──
-function showDialog(title, msg, hasInput, cb){
+function showDialog(title, msg, hasInput, cb, prefill=''){
   document.getElementById('dialog-title').textContent=title;
   document.getElementById('dialog-msg').textContent=msg;
   const inp=document.getElementById('dialog-input');
   inp.style.display=hasInput?'block':'none';
-  inp.value='';
+  inp.value=prefill||'';
   const btns=document.getElementById('dialog-btns');
   if(hasInput){
     btns.innerHTML=`<button class="btn btn-primary btn-full" onclick="closeDialog(true)">OK</button>
@@ -1315,24 +1336,7 @@ async function gasPost(body){
 // Service Worker (オフライン対応)
 // ══════════════════════════════════════════════════════
 if('serviceWorker' in navigator){
-  const swCode=`
-const CACHE='studydeck-v2';
-const ASSETS=[self.registration.scope];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
-self.addEventListener('fetch',e=>{
-  // GAS APIはキャッシュしない
-  if(e.request.url.includes('script.google.com')){ return; }
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
-    const clone=res.clone();
-    caches.open(CACHE).then(c=>c.put(e.request,clone));
-    return res;
-  }).catch(()=>caches.match(e.request))));
-});
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
-  `;
-  const blob=new Blob([swCode],{type:'application/javascript'});
-  const url=URL.createObjectURL(blob);
-  navigator.serviceWorker.register(url).catch(()=>{});
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 
 // ══════════════════════════════════════════════════════
