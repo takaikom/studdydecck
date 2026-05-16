@@ -417,7 +417,7 @@ input[type=file]{display:none}
         <span style="font-size:14px;color:var(--text2);flex:1">出題数</span>
         <input type="number" id="inp-count" min="1" placeholder="全問"
           style="width:80px;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:6px 10px;font-size:14px;color:var(--text);outline:none;text-align:center;font-family:inherit"
-          onfocus="this.style.borderColor='var(--accent3)'" onblur="this.style.borderColor='var(--surface3)'"
+          onfocus="this.style.borderColor='var(--accent3)';this.select();" onblur="this.style.borderColor='var(--surface3)'"
           onkeydown="if(event.key==='Enter'){this.blur();startStudy();}">
         <span style="font-size:13px;color:var(--text3)">問（空欄=全問）</span>
       </div>
@@ -614,10 +614,8 @@ function addUser(name, icon, color){
   state.users.push(user);
   saveUsers();
   renderUserGrid();
-  // GASにユーザー情報をアップロード（設定済みの場合）
-  if(state.gasUrl){
-    gasPost({ action:'saveUsers', users: JSON.stringify(state.users) }).catch(()=>{});
-  }
+  // ユーザー追加後はアップロードで同期（設定済みの場合）
+  if(state.gasUrl) syncProgressUp().catch(()=>{});
 }
 
 function renderUserGrid(){
@@ -1394,30 +1392,48 @@ async function downloadDeck(deckId){
 async function syncProgressUp(){
   if(!state.gasUrl){ toast('GAS URLが未設定です'); return; }
   if(!state.currentUser){ toast('ユーザーを選択してください'); return; }
-  const prog = loadProgress();
-  const uid = state.currentUser.id;
-  const up = prog[uid]||{};
-  if(!Object.keys(up).length){ toast('アップロードする成績データがありません'); return; }
 
-  setGasStatus('wait'); toast('⬆ 成績をアップロード中…');
-  let totalSaved = 0;
+  setGasStatus('wait'); toast('⬆ アップロード中…');
   try{
-    // ユーザー情報もアップロード
-    await gasPost({ action:'saveUsers', users: JSON.stringify(state.users) }).catch(()=>{});
-    for(const deckId of Object.keys(up)){
-      const dp = up[deckId];
-      const cards = dp.cards||{};
-      const results = Object.entries(cards).map(([cardId,correct])=>({cardId,correct}));
-      if(!results.length) continue;
-      const sessionId = uid+'_'+deckId+'_sync_'+Date.now();
-      const r = await gasPost({
-        action:'saveProgress', userId:uid, deckId, sessionId, results
-      });
-      if(r.ok) totalSaved += r.saved||0;
+    // GASから現在のデータを取得（他ユーザー分を上書きしないため）
+    let remote = null;
+    try{ remote = await gasGet({action:'getAllData'}); }catch(_){}
+
+    const prog = loadProgress();
+    // 送信ペイロード：自分の成績＋全ユーザーリストを同梱
+    // GASに既存データがあれば他ユーザーの成績を保護してマージ
+    const remoteProgress = (remote && remote.ok && remote.progress) ? remote.progress : {};
+    const mergedProgress = Object.assign({}, remoteProgress, prog);
+
+    const payload = {
+      action: 'saveAllData',
+      users: JSON.stringify(state.users),
+      progress: JSON.stringify(mergedProgress),
+      _sentAt: Date.now()
+    };
+    const r = await gasPost(payload);
+    // GASが saveAllData を未実装でも、従来の saveProgress で成績だけ送る
+    if(!r || !r.ok){
+      const uid = state.currentUser.id;
+      const up = prog[uid]||{};
+      let totalSaved = 0;
+      for(const deckId of Object.keys(up)){
+        const dp = up[deckId];
+        const cards = dp.cards||{};
+        const results = Object.entries(cards).map(([cardId,correct])=>({cardId,correct}));
+        if(!results.length) continue;
+        const sessionId = uid+'_'+deckId+'_sync_'+Date.now();
+        const r2 = await gasPost({action:'saveProgress', userId:uid, deckId, sessionId, results});
+        if(r2 && r2.ok) totalSaved += r2.saved||0;
+      }
+      localStorage.setItem(LS_SYNC_TS, new Date().toISOString());
+      setGasStatus('ok');
+      toast('✅ '+totalSaved+'件の成績をアップロードしました');
+    } else {
+      localStorage.setItem(LS_SYNC_TS, new Date().toISOString());
+      setGasStatus('ok');
+      toast('✅ アップロードしました（'+state.users.length+'ユーザー）');
     }
-    localStorage.setItem(LS_SYNC_TS, new Date().toISOString());
-    setGasStatus('ok');
-    toast('✅ '+totalSaved+'件の成績をアップロードしました');
   }catch(e){ setGasStatus('err'); toast('❌ アップロード失敗: '+e.message); }
 }
 
@@ -1425,30 +1441,49 @@ async function syncProgressUp(){
 async function syncProgressDown(){
   if(!state.gasUrl){ toast('GAS URLが未設定です'); return; }
   if(!state.currentUser){ toast('ユーザーを選択してください'); return; }
-  setGasStatus('wait'); toast('⬇ 成績を取得中…');
+  setGasStatus('wait'); toast('⬇ 取得中…');
   try{
-    // ユーザー一覧をGASから取得してマージ
-    const ur = await gasGet({action:'getUsers'}).catch(()=>null);
-    if(ur && ur.ok && Array.isArray(ur.users) && ur.users.length){
-      ur.users.forEach(gu=>{
+    // ① まず getAllData でユーザー一覧＋全成績を一括取得を試みる
+    let allData = null;
+    try{ allData = await gasGet({action:'getAllData'}); }catch(_){}
+
+    if(allData && allData.ok && allData.users){
+      // ユーザー一覧をマージ（GASにいてローカルにいない人を追加）
+      const remoteUsers = Array.isArray(allData.users) ? allData.users : JSON.parse(allData.users||'[]');
+      let usersChanged = false;
+      remoteUsers.forEach(gu=>{
         if(!state.users.find(u=>u.id===gu.id)){
           state.users.push(gu);
+          usersChanged = true;
         }
       });
-      saveUsers();
-      renderUserGrid();
+      if(usersChanged){ saveUsers(); renderUserGrid(); toast('👤 新しいユーザーを追加しました'); }
+
+      // 成績をマージ（クラウド優先）
+      if(allData.progress){
+        const remoteProgress = typeof allData.progress==='string' ? JSON.parse(allData.progress) : allData.progress;
+        const prog = loadProgress();
+        Object.assign(prog, remoteProgress);
+        saveProgress(prog);
+      }
+      setGasStatus('ok');
+      renderDeckList();
+      if(state.currentDeck) renderDeckDetail();
+      toast('✅ 取得しました（'+state.users.length+'ユーザー）');
+      return;
     }
+
+    // ② getAllData 未対応のGASの場合は従来の getProgress にフォールバック
     const r = await gasGet({action:'getProgress', userId:state.currentUser.id});
-    if(!r.ok){ toast('取得失敗: '+r.error); setGasStatus('err'); return; }
+    if(!r.ok){ toast('取得失敗: '+(r.error||'不明')); setGasStatus('err'); return; }
     const prog = loadProgress();
     const uid = state.currentUser.id;
-    // マージ（クラウド優先）
     prog[uid] = Object.assign(prog[uid]||{}, r.progress||{});
     saveProgress(prog);
     setGasStatus('ok');
     renderDeckList();
     if(state.currentDeck) renderDeckDetail();
-    toast('✅ 成績を取得しました');
+    toast('✅ 成績を取得しました（ユーザー同期にはGASのgetAllData実装が必要です）');
   }catch(e){ setGasStatus('err'); toast('❌ 取得失敗: '+e.message); }
 }
 
