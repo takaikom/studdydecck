@@ -351,7 +351,7 @@ input[type=file]{display:none}
         </div>
         <div class="section-title">アプリ情報</div>
         <div class="card">
-          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.0<br>GAS連携対応 / オフライン対応 PWA</p>
+          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.1<br>GAS連携対応 / オフライン対応 PWA</p>
         </div>
       </div>
     </div>
@@ -408,6 +408,13 @@ input[type=file]{display:none}
       <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2);cursor:pointer;padding:10px 0">
         <input type="checkbox" id="chk-weak" style="width:18px;height:18px;accent-color:var(--accent3)"> 苦手カードのみ
       </label>
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 0 10px">
+        <span style="font-size:14px;color:var(--text2);flex:1">出題数</span>
+        <input type="number" id="inp-count" min="1" placeholder="全問"
+          style="width:80px;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:6px 10px;font-size:14px;color:var(--text);outline:none;text-align:center;font-family:inherit"
+          onfocus="this.style.borderColor='var(--accent3)'" onblur="this.style.borderColor='var(--surface3)'">
+        <span style="font-size:13px;color:var(--text3)">問（空欄=全問）</span>
+      </div>
     </div>
     <div style="margin-top:8px">
       <button class="btn btn-primary btn-full btn-lg" onclick="startStudy()">🚀 学習を開始</button>
@@ -448,12 +455,22 @@ input[type=file]{display:none}
 
   <!-- 選択肢 -->
   <div id="mode-choice" style="flex:1;display:flex;flex-direction:column;display:none;overflow:hidden">
-    <div class="choice-question" id="choice-q"></div>
-    <div class="choices-list" id="choices-list"></div>
-    <div class="explain-banner" id="choice-explain"></div>
-    <div class="study-nav" id="choice-nav" style="display:none">
-      <button class="btn btn-primary btn-full" onclick="nextCard()">次へ →</button>
+    <div style="position:relative;flex-shrink:0">
+      <div class="choice-question" id="choice-q"></div>
+      <!-- 次へボタン：問題文とAの間・右端 -->
+      <button id="choice-next-btn" class="btn btn-primary btn-sm"
+        style="display:none;position:absolute;bottom:-18px;right:16px;z-index:5;padding:7px 16px;font-size:13px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.35)"
+        onclick="nextCard()">次へ →</button>
     </div>
+    <!-- Aの上に余白（ボタン分） -->
+    <div id="choice-next-spacer" style="height:0;flex-shrink:0;transition:height .15s"></div>
+    <div class="choices-list" id="choices-list"></div>
+    <!-- ヒントボタン（回答前も表示可） -->
+    <div id="choice-hint-wrap" style="padding:0 16px 4px;flex-shrink:0;display:none">
+      <button id="choice-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px" onclick="toggleChoiceHint()">💡 ヒントを見る</button>
+      <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5"></div>
+    </div>
+    <div class="explain-banner" id="choice-explain" style="display:none"></div>
   </div>
 
   <!-- タイピング -->
@@ -587,6 +604,10 @@ function addUser(name, icon, color){
   state.users.push(user);
   saveUsers();
   renderUserGrid();
+  // GASにユーザー情報をアップロード（設定済みの場合）
+  if(state.gasUrl){
+    gasPost({ action:'saveUsers', users: JSON.stringify(state.users) }).catch(()=>{});
+  }
 }
 
 function renderUserGrid(){
@@ -765,6 +786,10 @@ function startStudy(){
   }
   if(shuffle) cards.sort(()=>Math.random()-.5);
 
+  // 出題数制限
+  const countVal = parseInt(document.getElementById('inp-count').value);
+  if(countVal>0 && countVal<cards.length) cards=cards.slice(0,countVal);
+
   // modeに応じてフィルター（flashcardはすべて対応）
   if(state.studyMode!=='flashcard'){
     const filtered = cards.filter(c=>c.type===state.studyMode);
@@ -827,12 +852,28 @@ function answerFlash(correct){
 function renderChoice(card){
   document.getElementById('choice-q').textContent=card.front_question||card.question||'';
   document.getElementById('choice-explain').className='explain-banner';
-  document.getElementById('choice-nav').style.display='none';
+  document.getElementById('choice-explain').style.display='none';
+  // 次へボタンを非表示
+  const nextBtn=document.getElementById('choice-next-btn');
+  nextBtn.style.display='none';
+  document.getElementById('choice-next-spacer').style.height='0';
   const choices=card.choices||[];
   const list=document.getElementById('choices-list');
   list.innerHTML=choices.map((c,i)=>
     `<button class="choice-option" onclick="selectChoice(${i})">${String.fromCharCode(65+i)}. ${c}</button>`
   ).join('');
+  // ヒントボタン（hintがある場合のみ表示）
+  const hintWrap=document.getElementById('choice-hint-wrap');
+  const hintBtn=document.getElementById('choice-hint-btn');
+  const hintText=document.getElementById('choice-hint-text');
+  if(card.hint){
+    hintWrap.style.display='block';
+    hintBtn.textContent='💡 ヒントを見る';
+    hintText.style.display='none';
+    hintText.textContent='ヒント: '+card.hint;
+  }else{
+    hintWrap.style.display='none';
+  }
 }
 
 function selectChoice(idx){
@@ -845,13 +886,30 @@ function selectChoice(idx){
     if(i===idx&&!correct) b.classList.add('wrong');
     if(i===idx&&correct) b.classList.add('correct');
   });
+  // explanationをDの直下（choices-listの後）に表示
   if(card.explanation){
     const exp=document.getElementById('choice-explain');
     exp.textContent='💡 '+card.explanation;
     exp.className='explain-banner show';
+    exp.style.display='block';
   }
-  document.getElementById('choice-nav').style.display='flex';
+  // 次へボタンを表示（問題文とAの間・右端）
+  const nextBtn=document.getElementById('choice-next-btn');
+  nextBtn.style.display='block';
+  document.getElementById('choice-next-spacer').style.height='28px';
   recordResult(card, correct);
+}
+
+function toggleChoiceHint(){
+  const hintText=document.getElementById('choice-hint-text');
+  const hintBtn=document.getElementById('choice-hint-btn');
+  if(hintText.style.display==='none'){
+    hintText.style.display='block';
+    hintBtn.textContent='💡 ヒントを隠す';
+  }else{
+    hintText.style.display='none';
+    hintBtn.textContent='💡 ヒントを見る';
+  }
 }
 
 function renderTyping(card){
@@ -1261,6 +1319,8 @@ async function syncProgressUp(){
   setGasStatus('wait'); toast('⬆ 成績をアップロード中…');
   let totalSaved = 0;
   try{
+    // ユーザー情報もアップロード
+    await gasPost({ action:'saveUsers', users: JSON.stringify(state.users) }).catch(()=>{});
     for(const deckId of Object.keys(up)){
       const dp = up[deckId];
       const cards = dp.cards||{};
@@ -1284,6 +1344,17 @@ async function syncProgressDown(){
   if(!state.currentUser){ toast('ユーザーを選択してください'); return; }
   setGasStatus('wait'); toast('⬇ 成績を取得中…');
   try{
+    // ユーザー一覧をGASから取得してマージ
+    const ur = await gasGet({action:'getUsers'}).catch(()=>null);
+    if(ur && ur.ok && Array.isArray(ur.users) && ur.users.length){
+      ur.users.forEach(gu=>{
+        if(!state.users.find(u=>u.id===gu.id)){
+          state.users.push(gu);
+        }
+      });
+      saveUsers();
+      renderUserGrid();
+    }
     const r = await gasGet({action:'getProgress', userId:state.currentUser.id});
     if(!r.ok){ toast('取得失敗: '+r.error); setGasStatus('err'); return; }
     const prog = loadProgress();
