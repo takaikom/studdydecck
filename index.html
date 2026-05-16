@@ -363,21 +363,6 @@ input[type=file]{display:none}
   </div>
 </div>
 
-<!-- ══ 共通タブバー ══ -->
-<div class="tab-bar" id="global-tab-bar">
-  <button class="tab-item active" id="tab-btn-decks" onclick="switchTab('decks')">
-    <span class="tab-icon">📚</span>デッキ
-  </button>
-  <button class="tab-item" id="tab-btn-stats" onclick="switchTab('stats')">
-    <span class="tab-icon">📊</span>統計
-  </button>
-  <button class="tab-item" id="tab-btn-settings" onclick="switchTab('settings')">
-    <span class="tab-icon">⚙️</span>設定
-  </button>
-</div>
-
-<!-- ══ S2: デッキ詳細 ══ -->
-
 <!-- ══ S2: デッキ詳細 ══ -->
 <div class="screen" id="s-deck">
   <div class="hdr">
@@ -567,6 +552,19 @@ input[type=file]{display:none}
 </div>
 
 <div id="toast"></div>
+
+<!-- ══ 共通タブバー ══ -->
+<div class="tab-bar" id="global-tab-bar">
+  <button class="tab-item active" id="tab-btn-decks" onclick="switchTab('decks')">
+    <span class="tab-icon">📚</span>デッキ
+  </button>
+  <button class="tab-item" id="tab-btn-stats" onclick="switchTab('stats')">
+    <span class="tab-icon">📊</span>統計
+  </button>
+  <button class="tab-item" id="tab-btn-settings" onclick="switchTab('settings')">
+    <span class="tab-icon">⚙️</span>設定
+  </button>
+</div>
 
 <script>
 // ══════════════════════════════════════════════════════
