@@ -106,6 +106,10 @@ html,body{height:100%;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;back
 .user-add{background:var(--surface2);border:2px dashed var(--surface3);cursor:pointer}
 .user-add .user-avatar{background:var(--surface3);color:var(--text3);font-size:28px}
 .user-edit-btn{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.25);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;opacity:0;transition:opacity .2s;padding:0;line-height:1}
+.user-del-btn{position:absolute;bottom:6px;right:6px;background:rgba(231,76,60,.3);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;opacity:0;transition:opacity .2s;padding:0;line-height:1}
+.user-tile:hover .user-del-btn{opacity:1}
+.user-tile:active .user-del-btn{opacity:1}
+@media (hover:none){.user-del-btn{opacity:.6}}
 .user-tile:hover .user-edit-btn{opacity:1}
 .user-tile:active .user-edit-btn{opacity:1}
 @media (hover:none){.user-edit-btn{opacity:.6}}
@@ -630,6 +634,7 @@ function renderUserGrid(){
     const sessions = Object.values(up).reduce((a,d)=>a+(d.sessions||0),0);
     return `<div class="user-tile" data-uid="${u.id}" onclick="selectAndGo('${u.id}')">
       <button class="user-edit-btn" onclick="event.stopPropagation();promptRenameUser('${u.id}')" title="名前を変更">✏️</button>
+      <button class="user-del-btn" onclick="event.stopPropagation();promptDeleteUser('${u.id}')" title="削除">🗑️</button>
       <div class="user-avatar" style="background:${u.color}22;color:${u.color}">${u.icon}</div>
       <div class="user-name">${u.name}</div>
       <div class="user-stats">${sessions}セッション</div>
@@ -669,6 +674,28 @@ function promptRenameUser(uid){
     }
     toast('名前を変更しました');
   }, user.name);
+}
+
+function promptDeleteUser(uid){
+  const user = state.users.find(u=>u.id===uid);
+  if(!user) return;
+  showDialog('ユーザーを削除', `「${user.name}」を削除しますか？\n成績データも削除されます。`, false, (ok)=>{
+    if(!ok) return;
+    state.users = state.users.filter(u=>u.id!==uid);
+    // 成績データも削除
+    const prog = loadProgress();
+    delete prog[uid];
+    saveProgress(prog);
+    saveUsers();
+    // 削除したユーザーが選択中なら選択解除
+    if(state.currentUser?.id===uid) state.currentUser=null;
+    // GASにも反映
+    if(state.gasUrl){
+      gasPost({ action:'saveUsers', users: JSON.stringify(state.users) }).catch(()=>{});
+    }
+    renderUserGrid();
+    toast(`「${user.name}」を削除しました`);
+  });
 }
 
 function selectUser(){
@@ -886,29 +913,62 @@ function toggleSpeech(){
     return;
   }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ toast('このブラウザは音声入力に未対応です'); return; }
+  if(!SR){ toast('このブラウザは音声入力に未対応です（Chrome推奨）'); return; }
+
   _speechRec = new SR();
   _speechRec.lang = 'ja-JP';
-  _speechRec.interimResults = false;
+  _speechRec.continuous = true;       // 話し続けても止まらない
+  _speechRec.interimResults = true;   // 途中経過もリアルタイム表示
+
+  const ta = document.getElementById('desc-textarea');
+  const base = ta.value;              // 既存テキストを保持
+
   _speechRec.onresult = e => {
-    const text = e.results[0][0].transcript;
-    const ta = document.getElementById('desc-textarea');
-    ta.value = ta.value ? ta.value + ' ' + text : text;
+    let interim = '';
+    let final = '';
+    for(let i = e.resultIndex; i < e.results.length; i++){
+      const t = e.results[i][0].transcript;
+      if(e.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    // 確定テキストを蓄積し、途中経過はグレー表示
+    if(final) ta.dataset.confirmed = (ta.dataset.confirmed||'') + final;
+    ta.value = (base ? base + ' ' : '') + (ta.dataset.confirmed||'') + interim;
   };
+
   _speechRec.onend = () => {
+    // confirmed を textarea に確定させてクリーンアップ
+    if(ta.dataset.confirmed !== undefined){
+      ta.value = (base ? base + ' ' : '') + ta.dataset.confirmed;
+      delete ta.dataset.confirmed;
+    }
     _speechRec = null;
     btn.style.background = 'var(--surface3)';
     btn.textContent = '🎤';
   };
-  _speechRec.onerror = () => {
+
+  _speechRec.onerror = e => {
+    const msg = {
+      'not-allowed' : 'マイクの使用が拒否されています。ブラウザの設定を確認してください',
+      'no-speech'   : '音声が検出されませんでした',
+      'network'     : 'ネットワークエラーが発生しました',
+      'aborted'     : null,
+    }[e.error] || '音声入力エラー: ' + e.error;
+    delete ta.dataset.confirmed;
     _speechRec = null;
     btn.style.background = 'var(--surface3)';
     btn.textContent = '🎤';
-    toast('音声入力エラー。マイクの許可を確認してください');
+    if(msg) toast(msg);
   };
-  _speechRec.start();
-  btn.style.background = 'var(--accent)';
-  btn.textContent = '⏹';
+
+  try{
+    _speechRec.start();
+    btn.style.background = 'var(--accent)';
+    btn.textContent = '⏹';
+  }catch(e){
+    _speechRec = null;
+    toast('音声入力を開始できませんでした');
+  }
 }
 
 function flipCard(){
