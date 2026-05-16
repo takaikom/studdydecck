@@ -1,5 +1,5 @@
 // StudyDeck Service Worker
-const CACHE_NAME = 'studydeck-v3';
+const CACHE_NAME = 'studydeck-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -28,7 +28,7 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// フェッチ: キャッシュファースト（GAS APIはキャッシュしない）
+// フェッチ: ネットワークファースト（常に最新を取得、オフライン時のみキャッシュ）
 self.addEventListener('fetch', event => {
   // GAS APIとChrome拡張はスキップ
   if (
@@ -39,17 +39,16 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        // 有効なレスポンスのみキャッシュ
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
-        }
+    fetch(event.request).then(response => {
+      // 有効なレスポンスはキャッシュを更新して返す
+      if (response && response.status === 200 && response.type !== 'opaque') {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        return response;
-      }).catch(() => caches.match(event.request));
+      }
+      return response;
+    }).catch(() => {
+      // オフライン時はキャッシュにフォールバック
+      return caches.match(event.request);
     })
   );
 });
