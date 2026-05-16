@@ -468,9 +468,9 @@ input[type=file]{display:none}
 <div id="mode-choice" style="flex:1;display:flex;flex-direction:column;display:none;overflow:hidden">
   <div class="choice-question" id="choice-q"></div>
   <!-- 次へ・戻るボタン行：問題文とAの間、右端に次へ／左端に戻る -->
-  <div id="choice-nav-row" style="display:none;justify-content:space-between;align-items:center;padding:4px 16px 4px;flex-shrink:0">
+  <div id="choice-nav-row" style="display:flex;justify-content:space-between;align-items:center;padding:4px 16px 4px;flex-shrink:0">
     <button class="btn btn-secondary btn-sm" style="font-size:13px;padding:7px 14px;border-radius:20px" onclick="prevCard()">← 戻る</button>
-    <button id="choice-next-btn" class="btn btn-primary btn-sm" style="font-size:13px;padding:7px 16px;border-radius:20px" onclick="nextCard()">次へ →</button>
+    <button id="choice-next-btn" class="btn btn-primary btn-sm" style="font-size:13px;padding:7px 16px;border-radius:20px;opacity:.35;pointer-events:none" onclick="nextCard()">次へ →</button>
   </div>
   <div class="choices-list" id="choices-list"></div>
   <!-- ヒント（Dの直下）と解説はchoices-listの末尾にJS側で挿入 -->
@@ -614,8 +614,10 @@ function addUser(name, icon, color){
   state.users.push(user);
   saveUsers();
   renderUserGrid();
-  // ユーザー追加後はアップロードで同期（設定済みの場合）
-  if(state.gasUrl) syncProgressUp().catch(()=>{});
+  // GASにユーザー情報をアップロード（設定済みの場合）
+  if(state.gasUrl){
+    gasPost({ action:'saveUsers', users: JSON.stringify(state.users) }).catch(()=>{});
+  }
 }
 
 function renderUserGrid(){
@@ -919,7 +921,10 @@ function answerFlash(correct){
 
 function renderChoice(card){
   document.getElementById('choice-q').textContent=card.front_question||card.question||'';
-  document.getElementById('choice-nav-row').style.display='none';
+  // ナビ行は常に表示、次へは未回答時は非活性
+  const nextBtn = document.getElementById('choice-next-btn');
+  nextBtn.style.opacity = '.35';
+  nextBtn.style.pointerEvents = 'none';
   const choices=card.choices||[];
   const list=document.getElementById('choices-list');
   // 選択肢ボタンを生成（ヒント・解説はDの直後にプレースホルダとして挿入）
@@ -954,7 +959,10 @@ function selectChoice(idx){
     exp.style.display='block';
   }
   // ② 次へ・戻るボタン行を表示
-  document.getElementById('choice-nav-row').style.display='flex';
+  // 回答後に次へを活性化
+  const nextBtn = document.getElementById('choice-next-btn');
+  nextBtn.style.opacity = '1';
+  nextBtn.style.pointerEvents = 'auto';
   recordResult(card, correct);
 }
 
@@ -1392,48 +1400,30 @@ async function downloadDeck(deckId){
 async function syncProgressUp(){
   if(!state.gasUrl){ toast('GAS URLが未設定です'); return; }
   if(!state.currentUser){ toast('ユーザーを選択してください'); return; }
+  const prog = loadProgress();
+  const uid = state.currentUser.id;
+  const up = prog[uid]||{};
+  if(!Object.keys(up).length){ toast('アップロードする成績データがありません'); return; }
 
-  setGasStatus('wait'); toast('⬆ アップロード中…');
+  setGasStatus('wait'); toast('⬆ 成績をアップロード中…');
+  let totalSaved = 0;
   try{
-    // GASから現在のデータを取得（他ユーザー分を上書きしないため）
-    let remote = null;
-    try{ remote = await gasGet({action:'getAllData'}); }catch(_){}
-
-    const prog = loadProgress();
-    // 送信ペイロード：自分の成績＋全ユーザーリストを同梱
-    // GASに既存データがあれば他ユーザーの成績を保護してマージ
-    const remoteProgress = (remote && remote.ok && remote.progress) ? remote.progress : {};
-    const mergedProgress = Object.assign({}, remoteProgress, prog);
-
-    const payload = {
-      action: 'saveAllData',
-      users: JSON.stringify(state.users),
-      progress: JSON.stringify(mergedProgress),
-      _sentAt: Date.now()
-    };
-    const r = await gasPost(payload);
-    // GASが saveAllData を未実装でも、従来の saveProgress で成績だけ送る
-    if(!r || !r.ok){
-      const uid = state.currentUser.id;
-      const up = prog[uid]||{};
-      let totalSaved = 0;
-      for(const deckId of Object.keys(up)){
-        const dp = up[deckId];
-        const cards = dp.cards||{};
-        const results = Object.entries(cards).map(([cardId,correct])=>({cardId,correct}));
-        if(!results.length) continue;
-        const sessionId = uid+'_'+deckId+'_sync_'+Date.now();
-        const r2 = await gasPost({action:'saveProgress', userId:uid, deckId, sessionId, results});
-        if(r2 && r2.ok) totalSaved += r2.saved||0;
-      }
-      localStorage.setItem(LS_SYNC_TS, new Date().toISOString());
-      setGasStatus('ok');
-      toast('✅ '+totalSaved+'件の成績をアップロードしました');
-    } else {
-      localStorage.setItem(LS_SYNC_TS, new Date().toISOString());
-      setGasStatus('ok');
-      toast('✅ アップロードしました（'+state.users.length+'ユーザー）');
+    // ユーザー情報もアップロード
+    await gasPost({ action:'saveUsers', users: JSON.stringify(state.users) }).catch(()=>{});
+    for(const deckId of Object.keys(up)){
+      const dp = up[deckId];
+      const cards = dp.cards||{};
+      const results = Object.entries(cards).map(([cardId,correct])=>({cardId,correct}));
+      if(!results.length) continue;
+      const sessionId = uid+'_'+deckId+'_sync_'+Date.now();
+      const r = await gasPost({
+        action:'saveProgress', userId:uid, deckId, sessionId, results
+      });
+      if(r.ok) totalSaved += r.saved||0;
     }
+    localStorage.setItem(LS_SYNC_TS, new Date().toISOString());
+    setGasStatus('ok');
+    toast('✅ '+totalSaved+'件の成績をアップロードしました');
   }catch(e){ setGasStatus('err'); toast('❌ アップロード失敗: '+e.message); }
 }
 
@@ -1441,49 +1431,43 @@ async function syncProgressUp(){
 async function syncProgressDown(){
   if(!state.gasUrl){ toast('GAS URLが未設定です'); return; }
   if(!state.currentUser){ toast('ユーザーを選択してください'); return; }
-  setGasStatus('wait'); toast('⬇ 取得中…');
+  setGasStatus('wait'); toast('⬇ 成績を取得中…');
   try{
-    // ① まず getAllData でユーザー一覧＋全成績を一括取得を試みる
-    let allData = null;
-    try{ allData = await gasGet({action:'getAllData'}); }catch(_){}
-
-    if(allData && allData.ok && allData.users){
-      // ユーザー一覧をマージ（GASにいてローカルにいない人を追加）
-      const remoteUsers = Array.isArray(allData.users) ? allData.users : JSON.parse(allData.users||'[]');
-      let usersChanged = false;
-      remoteUsers.forEach(gu=>{
-        if(!state.users.find(u=>u.id===gu.id)){
+    // ユーザー一覧をGASから取得してマージ
+    const ur = await gasGet({action:'getUsers'}).catch(()=>null);
+    if(ur && ur.ok && Array.isArray(ur.users) && ur.users.length){
+      let changed = false;
+      ur.users.forEach(gu=>{
+        const local = state.users.find(u=>u.id===gu.id);
+        if(!local){
+          // 新規ユーザーを追加
           state.users.push(gu);
-          usersChanged = true;
+          changed = true;
+        } else if(local.name !== gu.name || local.icon !== gu.icon || local.color !== gu.color){
+          // 既存ユーザーの名前・アイコン・カラーを上書き
+          local.name  = gu.name;
+          local.icon  = gu.icon  || local.icon;
+          local.color = gu.color || local.color;
+          changed = true;
         }
       });
-      if(usersChanged){ saveUsers(); renderUserGrid(); toast('👤 新しいユーザーを追加しました'); }
-
-      // 成績をマージ（クラウド優先）
-      if(allData.progress){
-        const remoteProgress = typeof allData.progress==='string' ? JSON.parse(allData.progress) : allData.progress;
-        const prog = loadProgress();
-        Object.assign(prog, remoteProgress);
-        saveProgress(prog);
+      if(changed){
+        saveUsers();
+        renderUserGrid();
+        toast('👤 ユーザー情報を更新しました');
       }
-      setGasStatus('ok');
-      renderDeckList();
-      if(state.currentDeck) renderDeckDetail();
-      toast('✅ 取得しました（'+state.users.length+'ユーザー）');
-      return;
     }
-
-    // ② getAllData 未対応のGASの場合は従来の getProgress にフォールバック
     const r = await gasGet({action:'getProgress', userId:state.currentUser.id});
-    if(!r.ok){ toast('取得失敗: '+(r.error||'不明')); setGasStatus('err'); return; }
+    if(!r.ok){ toast('取得失敗: '+r.error); setGasStatus('err'); return; }
     const prog = loadProgress();
     const uid = state.currentUser.id;
+    // マージ（クラウド優先）
     prog[uid] = Object.assign(prog[uid]||{}, r.progress||{});
     saveProgress(prog);
     setGasStatus('ok');
     renderDeckList();
     if(state.currentDeck) renderDeckDetail();
-    toast('✅ 成績を取得しました（ユーザー同期にはGASのgetAllData実装が必要です）');
+    toast('✅ 成績を取得しました');
   }catch(e){ setGasStatus('err'); toast('❌ 取得失敗: '+e.message); }
 }
 
