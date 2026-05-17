@@ -449,11 +449,12 @@ input[type=file]{display:none}
     </div>
   </div>
   <!-- ヒント：スクロール外・ボタン行の直上 -->
-  <div id="fc-hint-wrap" style="display:none;padding:6px 16px 0;flex-shrink:0">
-    <div style="text-align:center">
-      <button id="fc-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
+  <div id="fc-hint-wrap" style="display:none;padding:6px 16px 4px;flex-shrink:0">
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button id="fc-hint-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
+      <a id="fc-hint-link" class="btn btn-info" target="_blank" rel="noopener" style="font-size:12px;padding:6px 16px;text-decoration:none;display:none">🔗 参考リンク</a>
     </div>
-    <div id="fc-hint" style="display:none;margin-top:8px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5;white-space:pre-wrap;padding:0 4px"></div>
+    <div id="fc-hint" style="display:none;margin-top:10px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.6;white-space:pre-wrap"></div>
   </div>
   <div class="flash-btns">
     <button class="btn btn-secondary" onclick="prevCard()">← 戻る</button>
@@ -895,32 +896,21 @@ function renderFlashcard(card){
   const hintWrap=document.getElementById('fc-hint-wrap');
   const hintEl=document.getElementById('fc-hint');
   const hintBtn=document.getElementById('fc-hint-btn');
+  const linkBtn = document.getElementById('fc-hint-link');
   if(card.hint || card.hint_link){
-    hintEl.innerHTML = card.hint ? 'ヒント: '+card.hint.replace(/\n/g,'<br>') : '';
-    hintEl.style.display='none';
-    let linkBtn = document.getElementById('fc-hint-link');
-    if(!linkBtn){
-      linkBtn = document.createElement('a');
-      linkBtn.id = 'fc-hint-link';
-      linkBtn.target = '_blank';
-      linkBtn.rel = 'noopener';
-      linkBtn.className = 'btn btn-info btn-sm';
-      linkBtn.style.cssText = 'font-size:12px;padding:6px 16px;margin-left:8px;text-decoration:none;display:none';
-      hintBtn.insertAdjacentElement('afterend', linkBtn);
-    }
+    hintEl.innerHTML = card.hint ? 'ヒント: ' + card.hint.replace(/\n/g,'<br>') : '';
+    hintEl.style.display = 'none';
     if(card.hint_link){
       linkBtn.href = card.hint_link;
-      linkBtn.textContent = '🔗 参考リンク';
       linkBtn.style.display = 'inline-flex';
     } else {
       linkBtn.style.display = 'none';
     }
-    hintBtn.textContent='💡 ヒントを見る';
-    hintWrap.style.display='block';
+    hintBtn.textContent = '💡 ヒントを見る';
+    hintWrap.style.display = 'block';
   } else {
-    hintWrap.style.display='none';
+    hintWrap.style.display = 'none';
   }
-}
 
 function toggleFlashHint(){
   const el=document.getElementById('fc-hint');
