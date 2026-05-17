@@ -406,12 +406,14 @@ input[type=file]{display:none}
       <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2);cursor:pointer;padding:10px 0">
         <input type="checkbox" id="chk-weak" style="width:18px;height:18px;accent-color:var(--accent3)"> 苦手カードのみ
       </label>
-      <div style="display:flex;align-items:center;gap:10px;padding:6px 0 10px">
+      <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2);cursor:pointer;padding:10px 0">
+        <input type="checkbox" id="chk-reverse" style="width:18px;height:18px;accent-color:var(--accent3)"> おもて／うらを入れ替え
+      </label><div style="display:flex;align-items:center;gap:10px;padding:6px 0 10px">
         <span style="font-size:14px;color:var(--text2);flex:1">出題数</span>
         <input type="number" id="inp-count" min="1" placeholder="全問"
           style="width:80px;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:6px 10px;font-size:14px;color:var(--text);outline:none;text-align:center;font-family:inherit"
           onfocus="this.style.borderColor='var(--accent3)';this.select();" onblur="this.style.borderColor='var(--surface3)'"
-          onkeydown="if(event.key==='Enter'){this.blur();startStudy();}">
+          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
         <span style="font-size:13px;color:var(--text3)">問（空欄=全問）</span>
       </div>
     </div>
@@ -586,6 +588,7 @@ let state = {
   decks: [],
   currentDeck: null,
   studyMode: 'flashcard',
+  reverseMode: false,
   studyCards: [],
   studyIndex: 0,
   studyResults: [],
@@ -824,6 +827,7 @@ function startStudy(){
     if(cards.length===0){ toast('苦手カードがありません'); return; }
   }
   if(shuffle) cards.sort(()=>Math.random()-.5);
+  state.reverseMode = document.getElementById('chk-reverse')?.checked || false;
 
   // 出題数制限
   const countVal = parseInt(document.getElementById('inp-count').value);
@@ -872,8 +876,11 @@ function renderFlashcard(card){
   const fc=document.getElementById('flashcard');
   fc.classList.remove('flipped');
   state.cardFlipped=false;
-  document.getElementById('fc-front').textContent=card.front||card.front_question||'';
-  document.getElementById('fc-back').textContent=card.back||card.back_answer||'';
+  const rev = state.reverseMode;
+  const frontText = rev ? (card.back||card.back_answer||'') : (card.front||card.front_question||'');
+  const backText  = rev ? (card.front||card.front_question||'') : (card.back||card.back_answer||'');
+  document.getElementById('fc-front').textContent = frontText;
+  document.getElementById('fc-back').textContent  = backText;
   document.getElementById('fc-explanation').textContent=card.explanation||'';
   // ④ ヒントをカード外に移動・初期非表示
   const hintWrap=document.getElementById('fc-hint-wrap');
@@ -1315,7 +1322,7 @@ function showDialog(title, msg, hasInput, cb, prefill=''){
       <button class="btn btn-secondary btn-full" onclick="closeDialog()">キャンセル</button>`;
     window._dialogCb=(ok)=>{ if(ok) cb(inp.value); };
   }else{
-    btns.innerHTML=`<button class="btn btn-danger btn-full" onclick="closeDialog(true)">終了</button>
+    btns.innerHTML=`<button class="btn btn-danger btn-full" onclick="closeDialog(true)">OK</button>
       <button class="btn btn-secondary btn-full" onclick="closeDialog()">キャンセル</button>`;
     window._dialogCb=(ok)=>cb(ok);
   }
