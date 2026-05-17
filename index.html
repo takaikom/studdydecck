@@ -886,15 +886,32 @@ function renderFlashcard(card){
   const hintWrap=document.getElementById('fc-hint-wrap');
   const hintEl=document.getElementById('fc-hint');
   const hintBtn=document.getElementById('fc-hint-btn');
-  if(card.hint){
-    hintEl.textContent='ヒント: '+card.hint;
+  if(card.hint || card.hint_link){
+    hintEl.textContent = card.hint ? 'ヒント: '+card.hint : '';
     hintEl.style.display='none';
+    // リンクボタン
+    let linkBtn = document.getElementById('fc-hint-link');
+    if(!linkBtn){
+      linkBtn = document.createElement('a');
+      linkBtn.id = 'fc-hint-link';
+      linkBtn.target = '_blank';
+      linkBtn.rel = 'noopener';
+      linkBtn.className = 'btn btn-info btn-sm';
+      linkBtn.style.cssText = 'font-size:12px;padding:6px 16px;margin-left:8px;text-decoration:none';
+      hintBtn.insertAdjacentElement('afterend', linkBtn);
+    }
+    if(card.hint_link){
+      linkBtn.href = card.hint_link;
+      linkBtn.textContent = '🔗 参考リンク';
+      linkBtn.style.display = 'inline-flex';
+    } else {
+      linkBtn.style.display = 'none';
+    }
     hintBtn.textContent='💡 ヒントを見る';
     hintWrap.style.display='block';
-  }else{
+  } else {
     hintWrap.style.display='none';
   }
-}
 
 function toggleFlashHint(){
   const el=document.getElementById('fc-hint');
@@ -1001,10 +1018,11 @@ function renderChoice(card){
     `<button class="choice-option" onclick="selectChoice(${i})">${String.fromCharCode(65+i)}. ${c}</button>`
   ).join('')
   // ③ Dの直下にヒントと解説エリアを配置
-  +(card.hint
+  +((card.hint||card.hint_link)
     ? `<div id="choice-hint-wrap" style="margin:4px 0 2px">
          <button id="choice-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px" onclick="toggleChoiceHint()">💡 ヒントを見る</button>
-         <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5"></div>
+         ${card.hint_link ? `<a id="choice-hint-link" href="${card.hint_link}" target="_blank" rel="noopener" class="btn btn-info btn-sm" style="font-size:12px;padding:6px 14px;margin-left:8px;text-decoration:none">🔗 参考リンク</a>` : ''}
+         <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5">${card.hint||''}</div>
        </div>`
     : '<div id="choice-hint-wrap" style="display:none"></div>')
   +'<div class="explain-banner" id="choice-explain" style="display:none"></div>';
@@ -1049,7 +1067,25 @@ function toggleChoiceHint(){
 
 function renderTyping(card){
   document.getElementById('typing-q').textContent=card.front_question||card.question||'';
-  document.getElementById('typing-hint').textContent=card.hint?'ヒント: '+card.hint:'';
+  const typingHintEl = document.getElementById('typing-hint');
+  typingHintEl.textContent = card.hint ? 'ヒント: '+card.hint : '';
+  let typingLinkBtn = document.getElementById('typing-hint-link');
+  if(!typingLinkBtn){
+    typingLinkBtn = document.createElement('a');
+    typingLinkBtn.id = 'typing-hint-link';
+    typingLinkBtn.target = '_blank';
+    typingLinkBtn.rel = 'noopener';
+    typingLinkBtn.className = 'btn btn-info btn-sm';
+    typingLinkBtn.style.cssText = 'font-size:12px;padding:6px 14px;margin-top:6px;text-decoration:none;display:none';
+    typingHintEl.insertAdjacentElement('afterend', typingLinkBtn);
+  }
+  if(card.hint_link){
+    typingLinkBtn.href = card.hint_link;
+    typingLinkBtn.textContent = '🔗 参考リンク';
+    typingLinkBtn.style.display = 'inline-flex';
+  } else {
+    typingLinkBtn.style.display = 'none';
+  }
   const inp=document.getElementById('typing-input');
   inp.value='';inp.className='typing-input';inp.disabled=false;inp.focus();
   document.getElementById('typing-result').className='typing-result';
@@ -1204,6 +1240,7 @@ function normalizeDeck(data){
       correct_index: c.correct_index!==undefined?Number(c.correct_index):0,
       acceptable_answers: typeof c.acceptable_answers==='string'?c.acceptable_answers.split(',').map(s=>s.trim()):c.acceptable_answers||[],
       hint: c.hint||'',
+      hint_link: c.hint_link||'',
       explanation: c.explanation||'',
       check_points: typeof c.check_points==='string'?c.check_points.split(',').map(s=>s.trim()):c.check_points||[],
       tags: typeof c.tags==='string'?c.tags.split(',').map(s=>s.trim()):c.tags||[],
