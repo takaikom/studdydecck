@@ -160,7 +160,7 @@ html,body{height:100%;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;back
 .flashcard-area{flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch}
 .flashcard-area::-webkit-scrollbar{width:3px}
 .flashcard-area::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
-.fc-panel{width:100%;border-radius:var(--radius);padding:20px;margin-bottom:10px;cursor:pointer;transition:var(--trans);text-align:center}
+.fc-panel{width:100%;border-radius:var(--radius);padding:20px;margin-bottom:10px;cursor:pointer;transition:var(--trans);text-align:left}
 .fc-panel:active{transform:scale(.98)}
 .fc-front-panel{background:var(--surface);border:1px solid rgba(255,255,255,.08)}
 .fc-back-panel{background:var(--surface2);border:1px solid var(--accent3)}
@@ -174,7 +174,7 @@ html,body{height:100%;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;back
 .flash-btns .btn{flex:1}
 
 /* 選択肢 */
-.choice-question{text-align:center;padding:20px 16px 10px;font-size:17px;font-weight:600;line-height:1.5;flex-shrink:0;white-space:pre-wrap;word-break:break-word}
+.choice-question{text-align:left;padding:20px 16px 10px;font-size:17px;font-weight:600;line-height:1.5;flex-shrink:0;white-space:pre-wrap;word-break:break-word}
 .choices-list{flex:1;padding:8px 16px;overflow-y:auto}
 .choice-option{display:block;width:100%;background:var(--surface);border:2px solid transparent;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px;font-family:inherit;font-size:14px;font-weight:500;color:var(--text);text-align:left;cursor:pointer;transition:var(--trans);line-height:1.4}
 .choice-option:active{transform:scale(.98)}
@@ -198,7 +198,7 @@ html,body{height:100%;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;back
 
 /* 記述式 */
 .desc-question{padding:20px 16px 10px;flex-shrink:0}
-.desc-q-text{font-size:16px;font-weight:600;line-height:1.5;margin-bottom:12px;text-align:center;white-space:pre-wrap;word-break:break-word}
+.desc-q-text{font-size:16px;font-weight:600;line-height:1.5;margin-bottom:12px;text-align:left;white-space:pre-wrap;word-break:break-word}
 .desc-textarea{width:100%;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-sm);padding:12px;font-family:inherit;font-size:14px;color:var(--text);outline:none;resize:none;min-height:100px;transition:var(--trans)}
 .desc-textarea:focus{border-color:var(--accent3)}
 .desc-model-ans{background:var(--surface);border-radius:var(--radius-sm);padding:14px;margin-top:12px;font-size:14px;line-height:1.6;color:var(--text2);display:none;white-space:pre-wrap;word-break:break-word}
@@ -447,13 +447,13 @@ input[type=file]{display:none}
       <div class="card-main" id="fc-back"></div>
       <div class="card-sub" id="fc-explanation"></div>
     </div>
-    <!-- ヒント -->
-    <div id="fc-hint-wrap" style="display:none;margin-bottom:10px">
-      <div style="text-align:center">
-        <button id="fc-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
-      </div>
-      <div id="fc-hint" style="display:none;margin-top:8px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5;white-space:pre-wrap"></div>
+  </div>
+  <!-- ヒント：スクロール外・ボタン行の直上 -->
+  <div id="fc-hint-wrap" style="display:none;padding:6px 16px 0;flex-shrink:0">
+    <div style="text-align:center">
+      <button id="fc-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
     </div>
+    <div id="fc-hint" style="display:none;margin-top:8px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5;white-space:pre-wrap;padding:0 4px"></div>
   </div>
   <div class="flash-btns">
     <button class="btn btn-secondary" onclick="prevCard()">← 戻る</button>
