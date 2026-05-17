@@ -157,23 +157,24 @@ html,body{height:100%;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;back
 .study-counter{text-align:center;font-size:13px;color:var(--text2);padding:10px;flex-shrink:0}
 
 /* フラッシュカード */
-.flashcard-area{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;perspective:1000px}
-.flashcard{width:100%;max-width:360px;height:220px;position:relative;transform-style:preserve-3d;cursor:pointer;transition:transform .5s cubic-bezier(.4,0,.2,1)}
-.flashcard.flipped{transform:rotateY(180deg)}
-.card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
-.card-front{background:var(--surface);border:1px solid rgba(255,255,255,.08)}
-.card-back{background:var(--surface2);border:1px solid var(--accent3);transform:rotateY(180deg)}
+.flashcard-area{flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch}
+.flashcard-area::-webkit-scrollbar{width:3px}
+.flashcard-area::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+.fc-panel{width:100%;border-radius:var(--radius);padding:20px;margin-bottom:10px;cursor:pointer;transition:var(--trans);text-align:center}
+.fc-panel:active{transform:scale(.98)}
+.fc-front-panel{background:var(--surface);border:1px solid rgba(255,255,255,.08)}
+.fc-back-panel{background:var(--surface2);border:1px solid var(--accent3)}
 .card-label{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:12px}
-.card-main{font-size:28px;font-weight:700;line-height:1.3;color:var(--text)}
-.card-sub{font-size:16px;color:var(--text2);margin-top:8px}
-.card-hint{font-size:12px;color:var(--accent2);margin-top:12px;font-style:italic}
-.card-tap{font-size:12px;color:var(--text3);position:absolute;bottom:14px}
+.card-main{font-size:24px;font-weight:700;line-height:1.4;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.card-sub{font-size:15px;color:var(--text2);margin-top:10px;white-space:pre-wrap;word-break:break-word;line-height:1.7;text-align:left}
+.card-hint{font-size:12px;color:var(--accent2);margin-top:12px;font-style:italic;white-space:pre-wrap;word-break:break-word}
+.card-tap{font-size:12px;color:var(--text3);margin-top:14px;display:block}
 
 .flash-btns{display:flex;gap:12px;padding:12px 16px;flex-shrink:0}
 .flash-btns .btn{flex:1}
 
 /* 選択肢 */
-.choice-question{text-align:center;padding:20px 16px 10px;font-size:17px;font-weight:600;line-height:1.5;flex-shrink:0}
+.choice-question{text-align:center;padding:20px 16px 10px;font-size:17px;font-weight:600;line-height:1.5;flex-shrink:0;white-space:pre-wrap;word-break:break-word}
 .choices-list{flex:1;padding:8px 16px;overflow-y:auto}
 .choice-option{display:block;width:100%;background:var(--surface);border:2px solid transparent;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px;font-family:inherit;font-size:14px;font-weight:500;color:var(--text);text-align:left;cursor:pointer;transition:var(--trans);line-height:1.4}
 .choice-option:active{transform:scale(.98)}
@@ -184,7 +185,7 @@ html,body{height:100%;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;back
 
 /* タイピング */
 .typing-question{text-align:center;padding:20px 16px 16px;flex-shrink:0}
-.typing-q-text{font-size:17px;font-weight:600;line-height:1.5;margin-bottom:8px}
+.typing-q-text{font-size:17px;font-weight:600;line-height:1.5;margin-bottom:8px;white-space:pre-wrap;word-break:break-word}
 .typing-area{padding:0 16px;flex-shrink:0}
 .typing-input{width:100%;background:var(--surface2);border:2px solid var(--surface3);border-radius:var(--radius-sm);padding:14px 16px;font-family:inherit;font-size:18px;color:var(--text);outline:none;transition:var(--trans);text-align:center}
 .typing-input:focus{border-color:var(--accent3)}
@@ -197,10 +198,10 @@ html,body{height:100%;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;back
 
 /* 記述式 */
 .desc-question{padding:20px 16px 10px;flex-shrink:0}
-.desc-q-text{font-size:16px;font-weight:600;line-height:1.5;margin-bottom:12px;text-align:center}
+.desc-q-text{font-size:16px;font-weight:600;line-height:1.5;margin-bottom:12px;text-align:center;white-space:pre-wrap;word-break:break-word}
 .desc-textarea{width:100%;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-sm);padding:12px;font-family:inherit;font-size:14px;color:var(--text);outline:none;resize:none;min-height:100px;transition:var(--trans)}
 .desc-textarea:focus{border-color:var(--accent3)}
-.desc-model-ans{background:var(--surface);border-radius:var(--radius-sm);padding:14px;margin-top:12px;font-size:14px;line-height:1.6;color:var(--text2);display:none}
+.desc-model-ans{background:var(--surface);border-radius:var(--radius-sm);padding:14px;margin-top:12px;font-size:14px;line-height:1.6;color:var(--text2);display:none;white-space:pre-wrap;word-break:break-word}
 .desc-model-ans.show{display:block}
 .desc-model-ans strong{color:var(--text);font-size:13px;display:block;margin-bottom:6px}
 .check-point{display:inline-block;background:rgba(78,205,196,.1);color:var(--accent3);border-radius:4px;padding:2px 8px;font-size:12px;margin:2px}
@@ -360,7 +361,7 @@ input[type=file]{display:none}
         </div>
         <div class="section-title">アプリ情報</div>
         <div class="card">
-          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.1<br>GAS連携対応 / オフライン対応 PWA</p>
+          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.2<br>GAS連携対応 / オフライン対応 PWA</p>
         </div>
       </div>
     </div>
@@ -432,25 +433,27 @@ input[type=file]{display:none}
   <div class="study-counter" id="study-counter"></div>
 
 <!-- フラッシュカード -->
-<div id="mode-flashcard" style="flex:1;display:flex;flex-direction:column;display:none">
-  <div class="flashcard-area">
-    <div class="flashcard" id="flashcard" onclick="flipCard()">
-      <div class="card-face card-front">
-        <div class="card-label">おもて</div>
-        <div class="card-main" id="fc-front"></div>
-        <div class="card-tap">タップしてめくる →</div>
-      </div>
-      <div class="card-face card-back">
-        <div class="card-label">うら</div>
-        <div class="card-main" id="fc-back"></div>
-        <div class="card-sub" id="fc-explanation"></div>
-      </div>
+<div id="mode-flashcard" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <div class="flashcard-area" id="flashcard-scroll">
+    <!-- おもて -->
+    <div class="fc-panel fc-front-panel" id="fc-front-panel" onclick="flipCard()">
+      <div class="card-label">おもて</div>
+      <div class="card-main" id="fc-front"></div>
+      <span class="card-tap">タップしてめくる ↓</span>
     </div>
-  </div>
-  <!-- ④ ヒントはカード外・タップで表示 -->
-  <div id="fc-hint-wrap" style="text-align:center;padding:0 16px 4px;flex-shrink:0;display:none">
-    <button id="fc-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
-    <div id="fc-hint" style="display:none;margin-top:8px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5"></div>
+    <!-- うら（初期非表示） -->
+    <div class="fc-panel fc-back-panel" id="fc-back-panel">
+      <div class="card-label">うら</div>
+      <div class="card-main" id="fc-back"></div>
+      <div class="card-sub" id="fc-explanation"></div>
+    </div>
+    <!-- ヒント -->
+    <div id="fc-hint-wrap" style="display:none;margin-bottom:10px">
+      <div style="text-align:center">
+        <button id="fc-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
+      </div>
+      <div id="fc-hint" style="display:none;margin-top:8px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5;white-space:pre-wrap"></div>
+    </div>
   </div>
   <div class="flash-btns">
     <button class="btn btn-secondary" onclick="prevCard()">← 戻る</button>
@@ -873,23 +876,28 @@ function showStudyCard(){
 }
 
 function renderFlashcard(card){
-  const fc=document.getElementById('flashcard');
-  fc.classList.remove('flipped');
   state.cardFlipped=false;
   const rev = state.reverseMode;
   const frontText = rev ? (card.back||card.back_answer||'') : (card.front||card.front_question||'');
   const backText  = rev ? (card.front||card.front_question||'') : (card.back||card.back_answer||'');
   document.getElementById('fc-front').textContent = frontText;
   document.getElementById('fc-back').textContent  = backText;
-  document.getElementById('fc-explanation').textContent=card.explanation||'';
-  // ④ ヒントをカード外に移動・初期非表示
+  document.getElementById('fc-explanation').textContent = card.explanation||'';
+  // うらパネルを初期非表示に戻す
+  const backPanel = document.getElementById('fc-back-panel');
+  backPanel.style.display = 'none';
+  const frontPanel = document.getElementById('fc-front-panel');
+  frontPanel.style.display = 'block';
+  // スクロールをトップに戻す
+  const scrollEl = document.getElementById('flashcard-scroll');
+  if(scrollEl) scrollEl.scrollTop = 0;
+  // ヒント
   const hintWrap=document.getElementById('fc-hint-wrap');
   const hintEl=document.getElementById('fc-hint');
   const hintBtn=document.getElementById('fc-hint-btn');
   if(card.hint || card.hint_link){
-    hintEl.textContent = card.hint ? 'ヒント: '+card.hint : '';
+    hintEl.innerHTML = card.hint ? 'ヒント: '+card.hint.replace(/\n/g,'<br>') : '';
     hintEl.style.display='none';
-    // リンクボタン
     let linkBtn = document.getElementById('fc-hint-link');
     if(!linkBtn){
       linkBtn = document.createElement('a');
@@ -897,7 +905,7 @@ function renderFlashcard(card){
       linkBtn.target = '_blank';
       linkBtn.rel = 'noopener';
       linkBtn.className = 'btn btn-info btn-sm';
-      linkBtn.style.cssText = 'font-size:12px;padding:6px 16px;margin-left:8px;text-decoration:none';
+      linkBtn.style.cssText = 'font-size:12px;padding:6px 16px;margin-left:8px;text-decoration:none;display:none';
       hintBtn.insertAdjacentElement('afterend', linkBtn);
     }
     if(card.hint_link){
@@ -912,6 +920,7 @@ function renderFlashcard(card){
   } else {
     hintWrap.style.display='none';
   }
+}
 
 function toggleFlashHint(){
   const el=document.getElementById('fc-hint');
@@ -996,8 +1005,16 @@ function toggleSpeech(){
 }
 
 function flipCard(){
-  state.cardFlipped=!state.cardFlipped;
-  document.getElementById('flashcard').classList.toggle('flipped',state.cardFlipped);
+  if(state.cardFlipped) return; // すでに表示済みなら何もしない
+  state.cardFlipped=true;
+  const backPanel = document.getElementById('fc-back-panel');
+  backPanel.style.display = 'block';
+  const frontPanel = document.getElementById('fc-front-panel');
+  // おもてパネルのタップヒントを非表示に
+  const tap = frontPanel.querySelector('.card-tap');
+  if(tap) tap.style.display = 'none';
+  // うらにスムーズスクロール
+  backPanel.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 function answerFlash(correct){
@@ -1022,7 +1039,7 @@ function renderChoice(card){
     ? `<div id="choice-hint-wrap" style="margin:4px 0 2px">
          <button id="choice-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px" onclick="toggleChoiceHint()">💡 ヒントを見る</button>
          ${card.hint_link ? `<a id="choice-hint-link" href="${card.hint_link}" target="_blank" rel="noopener" class="btn btn-info btn-sm" style="font-size:12px;padding:6px 14px;margin-left:8px;text-decoration:none">🔗 参考リンク</a>` : ''}
-         <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5">${card.hint||''}</div>
+         <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5;white-space:pre-wrap;word-break:break-word">${card.hint||''}</div>
        </div>`
     : '<div id="choice-hint-wrap" style="display:none"></div>')
   +'<div class="explain-banner" id="choice-explain" style="display:none"></div>';
@@ -1068,7 +1085,7 @@ function toggleChoiceHint(){
 function renderTyping(card){
   document.getElementById('typing-q').textContent=card.front_question||card.question||'';
   const typingHintEl = document.getElementById('typing-hint');
-  typingHintEl.textContent = card.hint ? 'ヒント: '+card.hint : '';
+  typingHintEl.innerHTML = card.hint ? 'ヒント: '+card.hint.replace(/\n/g,'<br>') : '';
   let typingLinkBtn = document.getElementById('typing-hint-link');
   if(!typingLinkBtn){
     typingLinkBtn = document.createElement('a');
