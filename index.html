@@ -447,14 +447,20 @@ input[type=file]{display:none}
       <div class="card-main" id="fc-back"></div>
       <div class="card-sub" id="fc-explanation"></div>
     </div>
-  </div>
-  <!-- ヒント：スクロール外・ボタン行の直上 -->
-  <div id="fc-hint-wrap" style="display:none;padding:6px 16px 8px;flex-shrink:0;overflow:visible;max-height:160px;overflow-y:auto">
-    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-      <button id="fc-hint-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
-      <a id="fc-hint-link" class="btn btn-info" target="_blank" rel="noopener" style="font-size:12px;padding:6px 16px;text-decoration:none;display:none">🔗 参考リンク</a>
+    <!-- うら（初期非表示） -->
+    <div class="fc-panel fc-back-panel" id="fc-back-panel">
+      <div class="card-label">うら</div>
+      <div class="card-main" id="fc-back"></div>
+      <div class="card-sub" id="fc-explanation"></div>
     </div>
-    <div id="fc-hint" style="display:none;margin-top:10px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.6;white-space:pre-wrap"></div>
+    <!-- ヒント：うらの直後・スクロール内 -->
+    <div id="fc-hint-wrap" style="display:none;padding:4px 4px 8px">
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button id="fc-hint-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
+        <a id="fc-hint-link" class="btn btn-info" target="_blank" rel="noopener" style="font-size:12px;padding:6px 16px;text-decoration:none;display:none">🔗 参考リンク</a>
+      </div>
+      <div id="fc-hint" style="display:none;margin-top:10px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.6;white-space:pre-wrap"></div>
+    </div>
   </div>
   <div class="flash-btns">
     <button class="btn btn-secondary" onclick="prevCard()">← 戻る</button>
