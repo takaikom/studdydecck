@@ -449,7 +449,7 @@ input[type=file]{display:none}
     </div>
   </div>
   <!-- ヒント：スクロール外・ボタン行の直上 -->
-  <div id="fc-hint-wrap" style="display:none;padding:6px 16px 4px;flex-shrink:0">
+  <div id="fc-hint-wrap" style="display:none;padding:6px 16px 8px;flex-shrink:0;overflow:visible;max-height:160px;overflow-y:auto">
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
       <button id="fc-hint-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
       <a id="fc-hint-link" class="btn btn-info" target="_blank" rel="noopener" style="font-size:12px;padding:6px 16px;text-decoration:none;display:none">🔗 参考リンク</a>
@@ -916,13 +916,9 @@ function renderFlashcard(card){
 function toggleFlashHint(){
   const el=document.getElementById('fc-hint');
   const btn=document.getElementById('fc-hint-btn');
-  if(el.style.display==='none'){
-    el.style.display='block';
-    btn.textContent='💡 ヒントを隠す';
-  }else{
-    el.style.display='none';
-    btn.textContent='💡 ヒントを見る';
-  }
+  const isHidden = el.style.display==='' || el.style.display==='none';
+  el.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? '💡 ヒントを隠す' : '💡 ヒントを見る';
 }
 
 // ── 音声入力（記述式） ──
