@@ -1,3 +1,36 @@
+<!--
+=======================================================
+  StudyDeck 変更履歴
+=======================================================
+
+  [v2.3] デッキ詳細画面の改善
+
+  ① カード一覧：問題タイプ別フィルター
+     - 「カード一覧」見出し横にタイプ別フィルターボタンを追加
+       （すべて / 🃏フラッシュカード / ✅4択 / ⌨️タイピング / 📝記述）
+     - そのデッキに存在するタイプのみボタンが表示される
+     - デッキを開くたびに「すべて」にリセットされる
+
+  ② カード一覧：チェックの手動変更
+     - 各カード行の右端に2種類のチェックボタンを追加
+         ✓（緑丸）: 覚えた／クリア済みマーク
+         ★（黄丸）: 出題指定マーク
+     - チェック状態はユーザー×デッキ単位で localStorage に保存
+       （キー: sd_cardflags_{userId}_{deckId}）
+     - ★を1枚以上付けて「学習を開始」すると、★の問題のみ出題される
+     - ★指定中は「学習を開始」ボタン上部にバナーで件数を通知
+
+  ③ デッキ詳細画面の上部パーツを縮小
+     - stat-box・モードカード・チェックボックス・出題数フィールドを
+       一回り小さくし、「学習を開始」ボタンが画面内に収まりやすくした
+
+  ④ ページトップへ戻るボタン（固定表示）
+     - デッキ詳細でスクロール量が 200px を超えると右下に ↑ ボタンが出現
+     - タップするとスムーズスクロールでページ先頭へ戻る
+     - デッキ詳細画面以外では非表示
+
+=======================================================
+-->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -46,6 +79,7 @@ html.light .user-tile{background:var(--surface);border-color:transparent}
 html.light .mode-card{background:var(--surface2)}
 html.light .stat-box{background:var(--surface2)}
 html.light .flashcard-area{background:transparent}
+html.light #scroll-top-btn{background:var(--accent3);color:#000}
 .theme-toggle{background:none;border:none;font-size:20px;cursor:pointer;padding:4px 6px;border-radius:var(--radius-xs);transition:var(--trans);line-height:1}
 .theme-toggle:active{transform:scale(.9)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -361,7 +395,7 @@ input[type=file]{display:none}
         </div>
         <div class="section-title">アプリ情報</div>
         <div class="card">
-          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.2<br>GAS連携対応 / オフライン対応 PWA</p>
+          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.3<br>GAS連携対応 / オフライン対応 PWA</p>
         </div>
       </div>
     </div>
@@ -375,57 +409,70 @@ input[type=file]{display:none}
     <span class="hdr-title" id="deck-detail-title"></span>
     <button class="hdr-btn" onclick="deleteDeckConfirm()">削除</button>
   </div>
-  <div class="scroll">
-    <div class="stat-row" id="deck-stat-row"></div>
-    <div class="section-title">学習モード</div>
-    <div class="mode-grid" id="mode-grid">
-      <div class="mode-card active-mode" data-mode="flashcard" onclick="setMode('flashcard')">
-        <div class="mode-icon">🃏</div>
-        <div class="mode-name">フラッシュカード</div>
-        <div class="mode-desc">表裏をめくる</div>
+  <div class="scroll" id="deck-scroll">
+    <!-- ▼ stat-row を小さく -->
+    <div class="stat-row" id="deck-stat-row" style="margin-bottom:10px"></div>
+    <div class="section-title" style="margin-bottom:6px">学習モード</div>
+    <!-- ▼ モードグリッドを小さく -->
+    <div class="mode-grid" id="mode-grid" style="gap:7px">
+      <div class="mode-card active-mode" data-mode="flashcard" onclick="setMode('flashcard')" style="padding:10px 8px">
+        <div class="mode-icon" style="font-size:22px;margin-bottom:4px">🃏</div>
+        <div class="mode-name" style="font-size:12px">フラッシュカード</div>
+        <div class="mode-desc" style="font-size:10px">表裏をめくる</div>
       </div>
-      <div class="mode-card" data-mode="choice" onclick="setMode('choice')">
-        <div class="mode-icon">✅</div>
-        <div class="mode-name">4択クイズ</div>
-        <div class="mode-desc">選択肢を選ぶ</div>
+      <div class="mode-card" data-mode="choice" onclick="setMode('choice')" style="padding:10px 8px">
+        <div class="mode-icon" style="font-size:22px;margin-bottom:4px">✅</div>
+        <div class="mode-name" style="font-size:12px">4択クイズ</div>
+        <div class="mode-desc" style="font-size:10px">選択肢を選ぶ</div>
       </div>
-      <div class="mode-card" data-mode="typing" onclick="setMode('typing')">
-        <div class="mode-icon">⌨️</div>
-        <div class="mode-name">タイピング</div>
-        <div class="mode-desc">答えを入力</div>
+      <div class="mode-card" data-mode="typing" onclick="setMode('typing')" style="padding:10px 8px">
+        <div class="mode-icon" style="font-size:22px;margin-bottom:4px">⌨️</div>
+        <div class="mode-name" style="font-size:12px">タイピング</div>
+        <div class="mode-desc" style="font-size:10px">答えを入力</div>
       </div>
-      <div class="mode-card" data-mode="descriptive" onclick="setMode('descriptive')">
-        <div class="mode-icon">📝</div>
-        <div class="mode-name">記述式</div>
-        <div class="mode-desc">模範解答で確認</div>
+      <div class="mode-card" data-mode="descriptive" onclick="setMode('descriptive')" style="padding:10px 8px">
+        <div class="mode-icon" style="font-size:22px;margin-bottom:4px">📝</div>
+        <div class="mode-name" style="font-size:12px">記述式</div>
+        <div class="mode-desc" style="font-size:10px">模範解答で確認</div>
+      </div>
+    </div>
+    <!-- ▼ オプション類を小さく -->
+    <div style="margin-top:4px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer;padding:6px 0">
+        <input type="checkbox" id="chk-shuffle" style="width:16px;height:16px;accent-color:var(--accent3)"> シャッフル出題
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer;padding:6px 0">
+        <input type="checkbox" id="chk-weak" style="width:16px;height:16px;accent-color:var(--accent3)"> 苦手カードのみ
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer;padding:6px 0">
+        <input type="checkbox" id="chk-reverse" style="width:16px;height:16px;accent-color:var(--accent3)"> おもて／うらを入れ替え
+      </label>
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0 6px">
+        <span style="font-size:13px;color:var(--text2);flex:1">出題数</span>
+        <input type="number" id="inp-count" min="1" placeholder="全問"
+          style="width:72px;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:5px 8px;font-size:13px;color:var(--text);outline:none;text-align:center;font-family:inherit"
+          onfocus="this.style.borderColor='var(--accent3)';this.select();" onblur="this.style.borderColor='var(--surface3)'"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
+        <span style="font-size:12px;color:var(--text3)">問（空欄=全問）</span>
       </div>
     </div>
     <div style="margin-top:6px">
-      <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2);cursor:pointer;padding:10px 0">
-        <input type="checkbox" id="chk-shuffle" style="width:18px;height:18px;accent-color:var(--accent3)"> シャッフル出題
-      </label>
-      <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2);cursor:pointer;padding:10px 0">
-        <input type="checkbox" id="chk-weak" style="width:18px;height:18px;accent-color:var(--accent3)"> 苦手カードのみ
-      </label>
-      <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2);cursor:pointer;padding:10px 0">
-        <input type="checkbox" id="chk-reverse" style="width:18px;height:18px;accent-color:var(--accent3)"> おもて／うらを入れ替え
-      </label><div style="display:flex;align-items:center;gap:10px;padding:6px 0 10px">
-        <span style="font-size:14px;color:var(--text2);flex:1">出題数</span>
-        <input type="number" id="inp-count" min="1" placeholder="全問"
-          style="width:80px;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:6px 10px;font-size:14px;color:var(--text);outline:none;text-align:center;font-family:inherit"
-          onfocus="this.style.borderColor='var(--accent3)';this.select();" onblur="this.style.borderColor='var(--surface3)'"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
-        <span style="font-size:13px;color:var(--text3)">問（空欄=全問）</span>
-      </div>
-    </div>
-    <div style="margin-top:8px">
       <button class="btn btn-primary btn-full btn-lg" onclick="startStudy()">🚀 学習を開始</button>
     </div>
-    <div style="height:20px"></div>
-    <div class="section-title">カード一覧</div>
+    <div style="height:16px"></div>
+    <!-- ▼ カード一覧ヘッダー＋タイプフィルター -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <div class="section-title" style="margin-bottom:0;flex-shrink:0">カード一覧</div>
+      <div id="card-type-filter" style="display:flex;gap:5px;flex-wrap:wrap;flex:1"></div>
+    </div>
     <div id="card-list-preview"></div>
   </div>
 </div>
+
+<!-- ▼ ページトップボタン（固定表示） -->
+<button id="scroll-top-btn" onclick="scrollDeckToTop()"
+  style="position:fixed;bottom:80px;right:16px;width:42px;height:42px;border-radius:50%;background:var(--accent3);color:#000;border:none;font-size:20px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.4);z-index:50;display:none;align-items:center;justify-content:center;transition:opacity .2s;line-height:1;font-weight:700"
+  title="トップへ">↑</button>
 
 <!-- ══ S3: 学習 ══ -->
 <div class="screen" id="s-study">
@@ -762,10 +809,14 @@ function renderDeckList(){
 function openDeck(id){
   state.currentDeck = state.decks.find(d=>d.id===id);
   if(!state.currentDeck) return;
+  deckCardTypeFilter = 'all';
   document.getElementById('deck-detail-title').textContent = state.currentDeck.meta?.title||id;
   renderDeckDetail();
   showScreen('s-deck');
 }
+
+// カード一覧で選択中のタイプフィルター
+let deckCardTypeFilter = 'all';
 
 function renderDeckDetail(){
   const d = state.currentDeck;
@@ -774,9 +825,9 @@ function renderDeckDetail(){
   const dp = prog[uid]?.[d.id]||{};
   const total=d.cards.length, correct=dp.correct||0, sessions=dp.sessions||0;
   document.getElementById('deck-stat-row').innerHTML=`
-    <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-lbl">総カード数</div></div>
-    <div class="stat-box"><div class="stat-num">${sessions}</div><div class="stat-lbl">学習回数</div></div>
-    <div class="stat-box"><div class="stat-num">${total?Math.round(correct/total*100):0}%</div><div class="stat-lbl">正答率</div></div>`;
+    <div class="stat-box" style="padding:9px"><div class="stat-num" style="font-size:19px">${total}</div><div class="stat-lbl">総カード数</div></div>
+    <div class="stat-box" style="padding:9px"><div class="stat-num" style="font-size:19px">${sessions}</div><div class="stat-lbl">学習回数</div></div>
+    <div class="stat-box" style="padding:9px"><div class="stat-num" style="font-size:19px">${total?Math.round(correct/total*100):0}%</div><div class="stat-lbl">正答率</div></div>`;
 
   // モードグリッド（そのデッキで使えるtype）
   const types=[...new Set(d.cards.map(c=>c.type))];
@@ -785,20 +836,104 @@ function renderDeckDetail(){
     mc.style.opacity = types.includes(m)||m==='flashcard'?'1':'0.4';
   });
 
-  // カード一覧プレビュー
+  // タイプフィルターボタン
+  const allTypes = ['all', ...types];
+  const typeLabels = {all:'すべて', flashcard:'🃏フラッシュ', choice:'✅4択', typing:'⌨️タイピング', descriptive:'📝記述'};
+  const filterWrap = document.getElementById('card-type-filter');
+  if(filterWrap){
+    filterWrap.innerHTML = allTypes.map(t=>`
+      <button onclick="setDeckCardTypeFilter('${t}')" id="cftbtn-${t}"
+        style="font-size:11px;padding:3px 9px;border-radius:20px;border:1.5px solid ${t===deckCardTypeFilter?'var(--accent3)':'var(--surface3)'};background:${t===deckCardTypeFilter?'rgba(78,205,196,.15)':'var(--surface2)'};color:${t===deckCardTypeFilter?'var(--accent3)':'var(--text2)'};cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s">
+        ${typeLabels[t]||t}
+      </button>`).join('');
+  }
+
+  renderCardList();
+}
+
+function setDeckCardTypeFilter(t){
+  deckCardTypeFilter = t;
+  renderDeckDetail();
+}
+
+// カード一覧レンダリング（フィルター・チェック対応）
+function renderCardList(){
+  const d = state.currentDeck;
+  if(!d) return;
+  const prog = loadProgress();
+  const uid = state.currentUser?.id;
   const cp = prog[uid]?.[d.id]?.cards||{};
+  const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+d.id;
+  let cardFlags = {};
+  try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+
+  // フィルター適用
+  const filtered = deckCardTypeFilter==='all' ? d.cards : d.cards.filter(c=>c.type===deckCardTypeFilter);
+
   const preview = document.getElementById('card-list-preview');
-  preview.innerHTML = d.cards.slice(0,30).map(c=>{
+  if(!preview) return;
+  if(filtered.length===0){
+    preview.innerHTML=`<p style="font-size:13px;color:var(--text3);text-align:center;padding:16px">該当するカードがありません</p>`;
+    return;
+  }
+  preview.innerHTML = filtered.map((c,i)=>{
     const r=cp[c.id];
-    const dot=r===undefined?'⬜':r?'✅':'❌';
-    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-      <span style="font-size:16px">${dot}</span>
+    const resultDot = r===undefined?'⬜':r?'🟢':'🔴';
+    const cleared = !!(cardFlags[c.id]?.cleared);
+    const pinned  = !!(cardFlags[c.id]?.pinned);
+    const bgLine = i%2===0?'transparent':'rgba(255,255,255,.02)';
+    return `<div style="display:flex;align-items:center;gap:6px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.05);background:${bgLine}">
+      <span style="font-size:14px;flex-shrink:0" title="正誤実績">${resultDot}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.front_question||c.front||''}</div>
-        <div style="font-size:11px;color:var(--text3)">${c.type} ${c.tags?.join(', ')||''}</div>
+        <div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.front_question||c.front||''}</div>
+        <div style="font-size:10px;color:var(--text3)">${c.type}${c.tags?.length?' · '+c.tags.join(', '):''}</div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button onclick="toggleCardFlag('${c.id}','cleared')"
+          title="${cleared?'覚えた（クリア済み）':'覚えた　をマーク'}"
+          style="width:30px;height:30px;border-radius:50%;border:1.5px solid ${cleared?'var(--green)':'var(--surface3)'};background:${cleared?'rgba(46,204,113,.15)':'var(--surface2)'};font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0">
+          ${cleared?'✓':''}
+        </button>
+        <button onclick="toggleCardFlag('${c.id}','pinned')"
+          title="${pinned?'出題指定中':'出題指定　をマーク'}"
+          style="width:30px;height:30px;border-radius:50%;border:1.5px solid ${pinned?'var(--accent2)':'var(--surface3)'};background:${pinned?'rgba(245,166,35,.15)':'var(--surface2)'};font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0">
+          ${pinned?'★':'☆'}
+        </button>
       </div>
     </div>`;
-  }).join('')+(d.cards.length>30?`<p style="font-size:12px;color:var(--text3);text-align:center;padding:8px">他 ${d.cards.length-30} 件</p>`:'');
+  }).join('');
+
+  // ★件数バナーを学習開始ボタン上に表示
+  const allFlags = {};
+  const uid2 = state.currentUser?.id;
+  const LS2 = 'sd_cardflags_'+uid2+'_'+d.id;
+  try{ Object.assign(allFlags, JSON.parse(localStorage.getItem(LS2)||'{}')); }catch{}
+  const pinnedCount = Object.values(allFlags).filter(f=>f?.pinned).length;
+  let banner = document.getElementById('pinned-banner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'pinned-banner';
+    const startBtn = document.querySelector('#s-deck .btn-primary');
+    if(startBtn) startBtn.parentElement.insertBefore(banner, startBtn);
+  }
+  if(pinnedCount > 0){
+    banner.innerHTML = `<div style="font-size:12px;color:var(--accent2);background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:var(--radius-xs);padding:6px 10px;margin-bottom:6px;text-align:center">★ 出題指定 ${pinnedCount} 問 → 学習を開始するとその問題のみ出題されます</div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+}
+
+function toggleCardFlag(cardId, flagKey){
+  const d = state.currentDeck;
+  const uid = state.currentUser?.id;
+  if(!d||!uid) return;
+  const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+d.id;
+  let cardFlags = {};
+  try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+  if(!cardFlags[cardId]) cardFlags[cardId]={};
+  cardFlags[cardId][flagKey] = !cardFlags[cardId][flagKey];
+  localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
+  renderCardList();
 }
 
 function setMode(m){
@@ -824,7 +959,22 @@ function startStudy(){
   const weakOnly = document.getElementById('chk-weak').checked;
   const shuffle = document.getElementById('chk-shuffle').checked;
   const prog = loadProgress();
-  const cp = prog[state.currentUser?.id]?.[d.id]?.cards||{};
+  const uid = state.currentUser?.id;
+  const cp = prog[uid]?.[d.id]?.cards||{};
+
+  // ★出題指定フラグ：pinnedカードが1枚でもあればそれのみ出題
+  const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+d.id;
+  let cardFlags = {};
+  try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+  const pinnedIds = Object.keys(cardFlags).filter(id=>cardFlags[id]?.pinned);
+  if(pinnedIds.length > 0){
+    const pinnedSet = new Set(pinnedIds);
+    const pinnedCards = cards.filter(c=>pinnedSet.has(c.id));
+    if(pinnedCards.length > 0){
+      cards = pinnedCards;
+      toast('★出題指定の '+cards.length+' 問を出題します');
+    }
+  }
 
   if(weakOnly){
     cards = cards.filter(c=>cp[c.id]===false || cp[c.id]===undefined);
@@ -1348,6 +1498,27 @@ function showScreen(id){
   // タブバーはホームとデッキ詳細のみ表示、出題中・結果画面は非表示
   const tabBar = document.getElementById('global-tab-bar');
   if(tabBar) tabBar.style.display = (id==='s-home'||id==='s-deck') ? 'flex' : 'none';
+  // ページトップボタン：デッキ詳細のみ
+  const topBtn = document.getElementById('scroll-top-btn');
+  if(topBtn) topBtn.style.display = 'none';
+  if(id==='s-deck'){
+    // フィルターをリセット
+    deckCardTypeFilter = 'all';
+    // スクロール監視を設定
+    const sc = document.getElementById('deck-scroll');
+    if(sc){
+      sc.onscroll = () => {
+        const btn = document.getElementById('scroll-top-btn');
+        if(btn) btn.style.display = sc.scrollTop > 200 ? 'flex' : 'none';
+      };
+      sc.scrollTop = 0;
+    }
+  }
+}
+
+function scrollDeckToTop(){
+  const sc = document.getElementById('deck-scroll');
+  if(sc) sc.scrollTo({top:0, behavior:'smooth'});
 }
 
 // ── ダイアログ ──
