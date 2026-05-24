@@ -3,31 +3,12 @@
   StudyDeck 変更履歴
 =======================================================
 
-  [v2.3] デッキ詳細画面の改善
+[v25] ★出題指定の一括解除ボタン追加
 
-  ① カード一覧：問題タイプ別フィルター
-     - 「カード一覧」見出し横にタイプ別フィルターボタンを追加
-       （すべて / 🃏フラッシュカード / ✅4択 / ⌨️タイピング / 📝記述）
-     - そのデッキに存在するタイプのみボタンが表示される
-     - デッキを開くたびに「すべて」にリセットされる
-
-  ② カード一覧：チェックの手動変更
-     - 各カード行の右端に2種類のチェックボタンを追加
-         ✓（緑丸）: 覚えた／クリア済みマーク
-         ★（黄丸）: 出題指定マーク
-     - チェック状態はユーザー×デッキ単位で localStorage に保存
-       （キー: sd_cardflags_{userId}_{deckId}）
-     - ★を1枚以上付けて「学習を開始」すると、★の問題のみ出題される
-     - ★指定中は「学習を開始」ボタン上部にバナーで件数を通知
-
-  ③ デッキ詳細画面の上部パーツを縮小
-     - stat-box・モードカード・チェックボックス・出題数フィールドを
-       一回り小さくし、「学習を開始」ボタンが画面内に収まりやすくした
-
-  ④ ページトップへ戻るボタン（固定表示）
-     - デッキ詳細でスクロール量が 200px を超えると右下に ↑ ボタンが出現
-     - タップするとスムーズスクロールでページ先頭へ戻る
-     - デッキ詳細画面以外では非表示
+  ① ★一括解除ボタン
+     - ★が1枚以上ある場合に表示される件数バナーに「★一括解除」ボタンを追加
+     - タップするとそのデッキの全カードの★指定をまとめて解除
+     - 解除後はバナーが非表示になりカード一覧の★表示も即時更新
 
 =======================================================
 -->
@@ -377,7 +358,7 @@ input[type=file]{display:none}
         </div>
         <div class="section-title">クラウド同期</div>
         <div class="card" style="margin-bottom:12px">
-          <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6">成績データをGASスプレッドシートに同期します。<br>複数端末で成績を共有できます。</p>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6">成績データ（グループのユーザー一覧を含む）をGASスプレッドシートに同期します。<br>複数端末で成績を共有できます。</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-success btn-sm" onclick="syncProgressUp()">⬆ 成績をアップロード</button>
             <button class="btn btn-info btn-sm" onclick="syncProgressDown()">⬇ 成績をダウンロード</button>
@@ -916,8 +897,11 @@ function renderCardList(){
     const startBtn = document.querySelector('#s-deck .btn-primary');
     if(startBtn) startBtn.parentElement.insertBefore(banner, startBtn);
   }
-  if(pinnedCount > 0){
-    banner.innerHTML = `<div style="font-size:12px;color:var(--accent2);background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:var(--radius-xs);padding:6px 10px;margin-bottom:6px;text-align:center">★ 出題指定 ${pinnedCount} 問 → 学習を開始するとその問題のみ出題されます</div>`;
+    if(pinnedCount > 0){
+    banner.innerHTML = `<div style="font-size:12px;color:var(--accent2);background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:var(--radius-xs);padding:6px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px">
+      <span style="flex:1;text-align:center">★ 出題指定 ${pinnedCount} 問 → 学習を開始するとその問題のみ出題されます</span>
+      <button onclick="clearAllPinned()" style="background:rgba(245,166,35,.3);border:none;color:var(--accent2);font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:inherit">★一括解除</button>
+    </div>`;
   } else {
     banner.innerHTML = '';
   }
@@ -934,6 +918,19 @@ function toggleCardFlag(cardId, flagKey){
   cardFlags[cardId][flagKey] = !cardFlags[cardId][flagKey];
   localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
   renderCardList();
+}
+
+function clearAllPinned(){
+  const d = state.currentDeck;
+  const uid = state.currentUser?.id;
+  if(!d||!uid) return;
+  const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+d.id;
+  let cardFlags = {};
+  try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+  Object.keys(cardFlags).forEach(id=>{ if(cardFlags[id]) cardFlags[id].pinned = false; });
+  localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
+  renderCardList();
+  toast('★出題指定をすべて解除しました');
 }
 
 function setMode(m){
@@ -1415,18 +1412,16 @@ function loadSampleDeck(){
       {id:'06',type:'flashcard',front:'山形県',back:'やまがたけん',tags:['東北地方']},
       {id:'07',type:'flashcard',front:'福島県',back:'ふくしまけん',tags:['東北地方']},
       {id:'08',type:'flashcard',front:'茨城県',back:'いばらきけん',hint:'「いばらぎ」ではない',tags:['関東地方']},
-      {id:'09',type:'flashcard',front:'栃木県',back:'とちぎけん',hint:'木偏に羊と木',tags:['関東地方']},
+      {id:'09',type:'flashcard',front:'栃木県',back:'とちぎけん',tags:['関東地方']},
       {id:'10',type:'flashcard',front:'群馬県',back:'ぐんまけん',tags:['関東地方']},
-      {id:'11',type:'flashcard',front:'埼玉県',back:'さいたまけん',hint:'土が3つ',tags:['関東地方']},
+      {id:'11',type:'flashcard',front:'埼玉県',back:'さいたまけん',tags:['関東地方']},
       {id:'12',type:'flashcard',front:'千葉県',back:'ちばけん',tags:['関東地方']},
       {id:'13',type:'flashcard',front:'東京都',back:'とうきょうと',tags:['関東地方']},
       {id:'14',type:'flashcard',front:'神奈川県',back:'かながわけん',tags:['関東地方']},
       {id:'15',type:'choice',front_question:'三重県の県庁所在地はどこ？',back_answer:'津市',
         choices:['津市','名張市','四日市市','松阪市'],correct_index:0,
         explanation:'三重県の県庁所在地は「津」。全国で最も短い市名',tags:['近畿地方','県庁所在地']},
-      {id:'16',type:'typing',front_question:'「とちぎけん」を漢字で書け',back_answer:'栃木県',
-        acceptable_answers:['栃木県'],hint:'木偏に羊と木',tags:['関東地方']},
-      {id:'17',type:'descriptive',
+      {id:'16',type:'descriptive',
         front_question:'日本の都道府県は全部でいくつあり、内訳を答えよ',
         back_answer:'都道府県は47。内訳は1都（東京）、1道（北海道）、2府（大阪・京都）、43県',
         check_points:['47','1都1道2府43県'],tags:['基礎知識']},
