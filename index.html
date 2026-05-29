@@ -3,6 +3,34 @@
   StudyDeck 変更履歴
 =======================================================
 
+[v27] カード追加モーダルに全フィールド追加 + GASアップロード対応
+
+  ① カード追加モーダルに追加したフィールド
+     - タグ（カンマ区切り）
+     - 参照リンク（URL入力 → hint_link フィールドに保存）
+
+  ② アプリで追加したカードをGASにアップロード
+     - submitAddCard() 完了後、GAS URLが設定済みの場合に
+       saveDeckToGas() を呼び出してデッキ全体をGASに送信
+     - GASには action:'saveDeck' + deck JSON を送信
+
+=======================================================
+
+[v26] ★カードのアプリ内追加機能 + フィルターボタン順序修正
+
+  ① アプリ内カード追加
+     - デッキ詳細のカード一覧ヘッダーに「＋ カード追加」ボタンを追加
+     - タップするとモーダルが開き、フラッシュ／4択／タイピング／記述式の4タイプから選択して追加可能
+     - 4択は選択肢を最大4つ入力（1つ目が正解）
+     - タイピングは許容される答えをカンマ区切りで設定可能
+     - 記述式は採点ポイントをカンマ区切りで設定可能
+     - ヒント・解説も入力可能
+
+  ② カード一覧タイプフィルターの順序修正
+     - 学習モードの並び順に合わせて「フラッシュカード／4択クイズ／タイピング／記述式」の順に統一
+
+=======================================================
+
 [v25] ★出題指定の一括解除ボタン追加
 
   ① ★一括解除ボタン
@@ -376,7 +404,7 @@ input[type=file]{display:none}
         </div>
         <div class="section-title">アプリ情報</div>
         <div class="card">
-          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.3<br>GAS連携対応 / オフライン対応 PWA</p>
+          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.4<br>GAS連携対応 / オフライン対応 PWA</p>
         </div>
       </div>
     </div>
@@ -445,6 +473,7 @@ input[type=file]{display:none}
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
       <div class="section-title" style="margin-bottom:0;flex-shrink:0">カード一覧</div>
       <div id="card-type-filter" style="display:flex;gap:5px;flex-wrap:wrap;flex:1"></div>
+      <button onclick="openAddCardModal()" style="flex-shrink:0;background:var(--accent3);color:#000;border:none;border-radius:var(--radius-xs);padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:var(--trans)" title="カードを追加">＋ カード追加</button>
     </div>
     <div id="card-list-preview"></div>
   </div>
@@ -586,6 +615,75 @@ input[type=file]{display:none}
     <p id="dialog-msg"></p>
     <input class="dialog-input" id="dialog-input" type="text" style="display:none" placeholder="">
     <div class="dialog-btns" id="dialog-btns"></div>
+  </div>
+</div>
+
+<!-- ══ カード追加モーダル ══ -->
+<div class="overlay" id="add-card-overlay" onclick="closeAddCardModal()">
+  <div class="dialog" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;padding-bottom:24px">
+    <h3 style="margin-bottom:12px">＋ カードを追加</h3>
+    <!-- カードタイプ選択 -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">カードタイプ</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="ac-type-btn" data-type="flashcard" onclick="selectAddCardType('flashcard')"
+          style="font-size:12px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--accent3);background:rgba(78,205,196,.15);color:var(--accent3);cursor:pointer;font-family:inherit">🃏 フラッシュ</button>
+        <button class="ac-type-btn" data-type="choice" onclick="selectAddCardType('choice')"
+          style="font-size:12px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--surface3);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:inherit">✅ 4択クイズ</button>
+        <button class="ac-type-btn" data-type="typing" onclick="selectAddCardType('typing')"
+          style="font-size:12px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--surface3);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:inherit">⌨️ タイピング</button>
+        <button class="ac-type-btn" data-type="descriptive" onclick="selectAddCardType('descriptive')"
+          style="font-size:12px;padding:5px 10px;border-radius:20px;border:1.5px solid var(--surface3);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:inherit">📝 記述式</button>
+      </div>
+    </div>
+    <!-- 共通フィールド -->
+    <div style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">おもて（問題文）<span style="color:var(--accent)">*</span></div>
+      <textarea id="ac-front" class="desc-textarea" rows="2" placeholder="問題文を入力" style="min-height:60px"></textarea>
+    </div>
+    <div style="margin-bottom:10px" id="ac-back-wrap">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px" id="ac-back-label">うら（答え）<span style="color:var(--accent)">*</span></div>
+      <textarea id="ac-back" class="desc-textarea" rows="2" placeholder="答えを入力" style="min-height:60px"></textarea>
+    </div>
+    <!-- 4択専用フィールド -->
+    <div id="ac-choices-wrap" style="display:none;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">選択肢（正解が先頭になるように入力）</div>
+      <input id="ac-c0" class="dialog-input" type="text" placeholder="選択肢1（正解）" style="margin-bottom:6px">
+      <input id="ac-c1" class="dialog-input" type="text" placeholder="選択肢2" style="margin-bottom:6px">
+      <input id="ac-c2" class="dialog-input" type="text" placeholder="選択肢3" style="margin-bottom:6px">
+      <input id="ac-c3" class="dialog-input" type="text" placeholder="選択肢4" style="margin-bottom:0">
+    </div>
+    <!-- タイピング専用：許容答え -->
+    <div id="ac-accept-wrap" style="display:none;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">許容される答え（カンマ区切り・省略可）</div>
+      <input id="ac-accept" class="dialog-input" type="text" placeholder="例: answer1, answer2">
+    </div>
+    <!-- 記述式専用：採点ポイント -->
+    <div id="ac-checkpoints-wrap" style="display:none;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">採点ポイント（カンマ区切り・省略可）</div>
+      <input id="ac-checkpoints" class="dialog-input" type="text" placeholder="例: キーワード1, キーワード2">
+    </div>
+    <!-- オプション -->
+    <div style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">💡 ヒント（省略可）</div>
+      <input id="ac-hint" class="dialog-input" type="text" placeholder="例：〇〇年代の出来事">
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">🔗 参照リンク（省略可）</div>
+      <input id="ac-hint-link" class="dialog-input" type="url" placeholder="https://example.com" style="font-family:monospace;font-size:13px">
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">📖 解説（省略可）</div>
+      <textarea id="ac-explanation" class="desc-textarea" rows="2" placeholder="解説を入力" style="min-height:54px"></textarea>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">🏷️ タグ（カンマ区切り・省略可）</div>
+      <input id="ac-tags" class="dialog-input" type="text" placeholder="例：歴史, 日本, 近代">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitAddCard()">追加する</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="closeAddCardModal()">キャンセル</button>
+    </div>
   </div>
 </div>
 
@@ -817,8 +915,9 @@ function renderDeckDetail(){
     mc.style.opacity = types.includes(m)||m==='flashcard'?'1':'0.4';
   });
 
-  // タイプフィルターボタン
-  const allTypes = ['all', ...types];
+  // タイプフィルターボタン（学習モードと同じ順序で固定）
+  const TYPE_ORDER = ['flashcard','choice','typing','descriptive'];
+  const allTypes = ['all', ...TYPE_ORDER.filter(t=>types.includes(t))];
   const typeLabels = {all:'すべて', flashcard:'🃏フラッシュ', choice:'✅4択', typing:'⌨️タイピング', descriptive:'📝記述'};
   const filterWrap = document.getElementById('card-type-filter');
   if(filterWrap){
@@ -1540,6 +1639,130 @@ function showDialog(title, msg, hasInput, cb, prefill=''){
 function closeDialog(ok=false){
   document.getElementById('dialog-overlay').classList.remove('show');
   if(window._dialogCb){ window._dialogCb(ok); window._dialogCb=null; }
+}
+
+// ══ カード追加モーダル ══
+let _addCardType = 'flashcard';
+
+function openAddCardModal(){
+  if(!state.currentDeck){ toast('デッキを開いてください'); return; }
+  _addCardType = 'flashcard';
+  // フィールドリセット
+  ['ac-front','ac-back','ac-hint','ac-hint-link','ac-explanation','ac-tags'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['ac-c0','ac-c1','ac-c2','ac-c3','ac-accept','ac-checkpoints'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  selectAddCardType('flashcard');
+  document.getElementById('add-card-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('ac-front')?.focus(), 120);
+}
+
+function closeAddCardModal(){
+  document.getElementById('add-card-overlay').classList.remove('show');
+}
+
+function selectAddCardType(type){
+  _addCardType = type;
+  // タイプボタンの見た目を更新
+  document.querySelectorAll('.ac-type-btn').forEach(btn=>{
+    const active = btn.dataset.type === type;
+    btn.style.borderColor = active ? 'var(--accent3)' : 'var(--surface3)';
+    btn.style.background  = active ? 'rgba(78,205,196,.15)' : 'var(--surface2)';
+    btn.style.color       = active ? 'var(--accent3)' : 'var(--text2)';
+  });
+  // タイプ別フィールド表示切り替え
+  const isChoice = type === 'choice';
+  const isTyping = type === 'typing';
+  const isDesc   = type === 'descriptive';
+  document.getElementById('ac-choices-wrap').style.display   = isChoice ? 'block' : 'none';
+  document.getElementById('ac-accept-wrap').style.display    = isTyping ? 'block' : 'none';
+  document.getElementById('ac-checkpoints-wrap').style.display = isDesc ? 'block' : 'none';
+  // うらラベルを変更
+  const backLabel = document.getElementById('ac-back-label');
+  if(backLabel){
+    backLabel.innerHTML = isDesc
+      ? '模範解答<span style="color:var(--accent)">*</span>'
+      : 'うら（答え）<span style="color:var(--accent)">*</span>';
+  }
+  // うら欄の表示制御
+  document.getElementById('ac-back-wrap').style.display = 'block';
+}
+
+function submitAddCard(){
+  const d = state.currentDeck;
+  if(!d) return;
+  const front = document.getElementById('ac-front').value.trim();
+  const back  = document.getElementById('ac-back').value.trim();
+  if(!front){ toast('おもて（問題文）を入力してください'); return; }
+  if(!back) { toast('うら（答え）を入力してください'); return; }
+
+  // 新カードID生成（既存の最大値+1）
+  const maxId = d.cards.reduce((mx,c)=>{
+    const n = parseInt(c.id)||0; return n>mx?n:mx;
+  }, 0);
+  const newId = String(maxId+1).padStart(3,'0');
+
+  const hint        = document.getElementById('ac-hint').value.trim();
+  const hintLink    = document.getElementById('ac-hint-link').value.trim();
+  const explanation = document.getElementById('ac-explanation').value.trim();
+  const tagsRaw     = document.getElementById('ac-tags').value.trim();
+  const tags        = tagsRaw ? tagsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+
+  const card = {
+    id: newId,
+    type: _addCardType,
+    front, back,
+    front_question: front,
+    back_answer: back,
+    hint, hint_link: hintLink,
+    explanation,
+    choices: [], correct_index: 0,
+    acceptable_answers: [],
+    check_points: [],
+    tags,
+  };
+
+  if(_addCardType === 'choice'){
+    const cs = [0,1,2,3].map(i=>document.getElementById('ac-c'+i).value.trim()).filter(Boolean);
+    if(cs.length < 2){ toast('選択肢を2つ以上入力してください'); return; }
+    card.choices = cs;
+    card.correct_index = 0;
+  }
+  if(_addCardType === 'typing'){
+    const raw = document.getElementById('ac-accept').value.trim();
+    card.acceptable_answers = raw ? raw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  }
+  if(_addCardType === 'descriptive'){
+    const raw = document.getElementById('ac-checkpoints').value.trim();
+    card.check_points = raw ? raw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  }
+
+  d.cards.push(card);
+  saveDecks();
+  closeAddCardModal();
+  renderDeckDetail();
+  // スクロールをカード一覧まで下げる
+  const sc = document.getElementById('deck-scroll');
+  if(sc) setTimeout(()=>{ sc.scrollTop = sc.scrollHeight; }, 80);
+  toast('カードを追加しました（'+d.cards.length+'問）');
+  // GASが設定済みならデッキをアップロード
+  if(state.gasUrl) saveDeckToGas(d);
+}
+
+// ── アプリ追加カードをGASにアップロード ──
+async function saveDeckToGas(deck){
+  if(!state.gasUrl) return;
+  try{
+    const r = await gasPost({ action:'saveDeck', deck: JSON.stringify(deck) });
+    if(r && r.ok){
+      setGasStatus('ok');
+      toast('☁️ GASにカードをアップロードしました');
+    } else {
+      console.warn('saveDeck GAS error:', r?.error);
+    }
+  }catch(e){ console.warn('saveDeckToGas failed:', e); }
 }
 
 function confirmReset(){
