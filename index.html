@@ -1,25 +1,26 @@
-<!--
 =======================================================
   StudyDeck 変更履歴
 =======================================================
 
-[v28] タグフィルター（プルダウン）・カード検索・ユーザー画面注意書き
+[v29] タグ複数選択フィルター・カード検索・ユーザー画面注意書き
 
-  ① カード一覧にタグフィルター（プルダウン形式）を追加
-     - タイプフィルターボタンの下にタグ選択セレクトボックスを追加
-     - デッキ内のカードに付与されたタグを自動収集してプルダウン表示
-     - タグフィルターはタイプフィルターと独立して組み合わせ可能
+  ① カード一覧にタグフィルター（複数選択ドロップダウン）を追加
+     - タイプフィルターボタンの下にドロップダウンボタンを配置
+     - クリックでチェックボックス付きパネルが開き複数タグを選択可能
+     - 選択タグをすべて持つカードのみ表示（AND条件）
+     - 「すべて」チェックで選択解除・外側クリックで閉じる
 
   ② カード一覧に検索欄を追加
      - タグフィルターの右隣に検索インプットを配置
-     - 入力内容でカードのおもて／うら／タグ／解説を部分一致検索
-     - Enter キーで検索欄からフォーカスを外す（キーボードを閉じる）
+     - おもて・うら・タグ・解説を部分一致検索
+     - Enter キーでフォーカス解除（キーボードを閉じる）
 
-  ③ ユーザー選択画面に利用規約・注意書きを追加
-     - ユーザーグリッド下部にアンバー色の注意書きパネルを追加
-     - 自己責任・バックアップ推奨・操作ログ収集の可能性を明記
+  ③ ユーザー選択画面に注意書きを追加
+     - ユーザーグリッド下部に利用規約・注意書きパネルを追加
 
 =======================================================
+
+[v27] カード追加モーダルに全フィールド追加 + GASアップロード対応
 
   ① カード追加モーダルに追加したフィールド
      - タグ（カンマ区切り）
@@ -55,6 +56,10 @@
      - 解除後はバナーが非表示になりカード一覧の★表示も即時更新
 
 =======================================================
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
 -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -506,14 +511,18 @@ input[type=file]{display:none}
       <div id="card-type-filter" style="display:flex;gap:5px;flex-wrap:wrap;flex:1"></div>
       <button onclick="openAddCardModal()" style="flex-shrink:0;background:var(--accent3);color:#000;border:none;border-radius:var(--radius-xs);padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:var(--trans)" title="カードを追加">＋ カード追加</button>
     </div>
-    <!-- ▼ タグフィルター＋検索欄 -->
-    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">
-      <select id="card-tag-filter"
-        onchange="setDeckCardTagFilter(this.value)"
-        style="flex:1;min-width:0;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:5px 8px;font-family:inherit;font-size:12px;color:var(--text);outline:none;cursor:pointer;transition:var(--trans)"
-        onfocus="this.style.borderColor='var(--accent3)'" onblur="this.style.borderColor='var(--surface3)'">
-        <option value="">🏷 タグ: すべて</option>
-      </select>
+    <!-- ▼ タグフィルター（複数選択ドロップダウン）＋検索欄 -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start">
+      <div style="flex:1;min-width:0;position:relative">
+        <button id="card-tag-filter-btn" onclick="toggleTagDropdown()"
+          style="width:100%;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:5px 8px;font-family:inherit;font-size:12px;color:var(--text2);outline:none;cursor:pointer;text-align:left;transition:var(--trans);display:flex;justify-content:space-between;align-items:center;gap:4px">
+          <span id="card-tag-filter-label">🏷 タグ: すべて</span>
+          <span style="font-size:10px;opacity:.6">▼</span>
+        </button>
+        <div id="card-tag-dropdown"
+          style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--accent3);border-radius:var(--radius-xs);z-index:60;max-height:200px;overflow-y:auto;box-shadow:var(--shadow)">
+        </div>
+      </div>
       <input id="card-search-input" type="text" placeholder="🔍 カードを検索…"
         oninput="setDeckCardSearch(this.value)"
         onkeydown="if(event.key==='Enter'){this.blur();}"
@@ -787,6 +796,14 @@ function init(){
   state.gasUrl = localStorage.getItem(LS_GAS_URL)||'';
   renderUserGrid();
   if(state.users.length===0) addUser('ユーザー1','🐶','#4ecdc4');
+  // タグドロップダウンを外側クリックで閉じる
+  document.addEventListener('click', e=>{
+    const btn = document.getElementById('card-tag-filter-btn');
+    const dd  = document.getElementById('card-tag-dropdown');
+    if(btn && dd && !btn.contains(e.target) && !dd.contains(e.target)){
+      closeTagDropdown();
+    }
+  });
 }
 
 // ── ユーザー管理 ──
@@ -934,7 +951,7 @@ function openDeck(id){
   state.currentDeck = state.decks.find(d=>d.id===id);
   if(!state.currentDeck) return;
   deckCardTypeFilter = 'all';
-  deckCardTagFilter  = '';
+  deckCardTagFilter  = new Set();
   deckCardSearch     = '';
   document.getElementById('deck-detail-title').textContent = state.currentDeck.meta?.title||id;
   renderDeckDetail();
@@ -943,7 +960,7 @@ function openDeck(id){
 
 // カード一覧で選択中のタイプフィルター
 let deckCardTypeFilter = 'all';
-let deckCardTagFilter  = '';
+let deckCardTagFilter  = new Set(); // 複数選択対応
 let deckCardSearch     = '';
 
 function renderDeckDetail(){
@@ -977,13 +994,9 @@ function renderDeckDetail(){
       </button>`).join('');
   }
 
-  // タグプルダウンを構築
+  // タグドロップダウンを構築
   const allTags = [...new Set(d.cards.flatMap(c=>c.tags||[]))].sort();
-  const tagSel = document.getElementById('card-tag-filter');
-  if(tagSel){
-    tagSel.innerHTML = `<option value="">🏷 タグ: すべて</option>`
-      + allTags.map(t=>`<option value="${t}"${t===deckCardTagFilter?' selected':''}>${t}</option>`).join('');
-  }
+  renderTagDropdown(allTags);
 
   // 検索欄を復元
   const searchEl = document.getElementById('card-search-input');
@@ -997,9 +1010,77 @@ function setDeckCardTypeFilter(t){
   renderDeckDetail();
 }
 
-function setDeckCardTagFilter(t){
-  deckCardTagFilter = t;
+function renderTagDropdown(allTags){
+  const dropdown = document.getElementById('card-tag-dropdown');
+  const btn      = document.getElementById('card-tag-filter-btn');
+  if(!dropdown || !btn) return;
+  if(allTags.length === 0){
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = '';
+  dropdown.innerHTML =
+    `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.1)">
+      <span style="font-size:11px;color:var(--text3);font-weight:600">タグで絞り込む</span>
+      <button onclick="closeTagDropdown()" style="background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:2px 4px;line-height:1">確定</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.08)">
+      <input type="checkbox" id="tag-chk-all" onchange="toggleTagAll(this.checked)"
+        ${deckCardTagFilter.size===0?'checked':''} style="accent-color:var(--accent3);width:14px;height:14px">
+      <span style="color:var(--text);font-weight:600">すべて</span>
+    </label>`
+    + allTags.map(t=>
+      `<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04)">
+        <input type="checkbox" class="tag-chk" value="${t}" onchange="toggleTagFilter('${t}',this.checked)"
+          ${deckCardTagFilter.has(t)?'checked':''} style="accent-color:var(--accent3);width:14px;height:14px">
+        <span style="color:var(--text2)">${t}</span>
+      </label>`
+    ).join('');
+  updateTagFilterLabel();
+}
+
+function toggleTagDropdown(){
+  const dd  = document.getElementById('card-tag-dropdown');
+  const btn = document.getElementById('card-tag-filter-btn');
+  if(!dd) return;
+  const open = dd.style.display !== 'none';
+  dd.style.display = open ? 'none' : 'block';
+  if(btn) btn.style.borderColor = open ? (deckCardTagFilter.size?'var(--accent3)':'var(--surface3)') : 'var(--accent3)';
+}
+
+function closeTagDropdown(){
+  const dd  = document.getElementById('card-tag-dropdown');
+  const btn = document.getElementById('card-tag-filter-btn');
+  if(dd) dd.style.display = 'none';
+  if(btn) btn.style.borderColor = deckCardTagFilter.size ? 'var(--accent3)' : 'var(--surface3)';
+}
+
+function toggleTagFilter(tag, checked){
+  if(checked) deckCardTagFilter.add(tag);
+  else        deckCardTagFilter.delete(tag);
+  const allChk = document.getElementById('tag-chk-all');
+  if(allChk) allChk.checked = (deckCardTagFilter.size === 0);
+  updateTagFilterLabel();
   renderCardList();
+}
+
+function toggleTagAll(checked){
+  if(checked){
+    deckCardTagFilter.clear();
+    document.querySelectorAll('.tag-chk').forEach(c=>{ c.checked=false; });
+  }
+  updateTagFilterLabel();
+  renderCardList();
+}
+
+function updateTagFilterLabel(){
+  const label = document.getElementById('card-tag-filter-label');
+  if(!label) return;
+  label.textContent = deckCardTagFilter.size === 0
+    ? '🏷 タグ: すべて'
+    : '🏷 ' + [...deckCardTagFilter].join(', ');
+  const btn = document.getElementById('card-tag-filter-btn');
+  if(btn) btn.style.borderColor = deckCardTagFilter.size ? 'var(--accent3)' : 'var(--surface3)';
 }
 
 function setDeckCardSearch(q){
@@ -1021,12 +1102,15 @@ function renderCardList(){
   // タイプフィルター適用
   let filtered = deckCardTypeFilter==='all' ? d.cards : d.cards.filter(c=>c.type===deckCardTypeFilter);
 
-  // タグフィルター適用
-  if(deckCardTagFilter){
-    filtered = filtered.filter(c=>(c.tags||[]).includes(deckCardTagFilter));
+  // タグフィルター適用（選択タグをすべて持つカードのみ、AND条件）
+  // タグフィルター適用（選択タグのいずれかを持つカード、OR条件）
+  if(deckCardTagFilter.size > 0){
+    filtered = filtered.filter(c=>
+      [...deckCardTagFilter].some(t=>(c.tags||[]).includes(t))
+    );
   }
 
-  // 検索フィルター適用
+  // 検索フィルター適用（おもて・うら・タグ・解説を部分一致）
   if(deckCardSearch.trim()){
     const q = deckCardSearch.trim().toLowerCase();
     filtered = filtered.filter(c=>{
