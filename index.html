@@ -3,7 +3,20 @@
   StudyDeck 変更履歴
 =======================================================
 
-[v30] カード一覧に完了日時・列見出し追加
+[v32] カード一覧タップで詳細表示 + ↑ボタン位置調整
+
+  ① カード一覧のカード行をタップするとカード詳細モーダルが開く
+     - おもて・うら・選択肢（正解強調表示）・ヒント・参考リンク・解説・採点ポイント・タグを表示
+     - ☆ / ✓ ボタン部分はタップしても詳細は開かない（フラグ操作のみ）
+
+  ② ページ先頭に戻る↑ボタンの位置を上に移動
+     - bottom: 80px → 160px に変更
+     - カード一覧最下部の☆ボタンに重ならないよう「完了日付の上」相当の高さに配置
+
+=======================================================
+
+[v31] （前バージョン履歴省略）
+
 
   ① カード一覧に「完了」「出題」の列ヘッダーを追加
      - ◯・☆ の意味が分かるよう、列上部に見出しを表示
@@ -567,7 +580,7 @@ input[type=file]{display:none}
 
 <!-- ▼ ページトップボタン（固定表示） -->
 <button id="scroll-top-btn" onclick="scrollDeckToTop()"
-  style="position:fixed;bottom:80px;right:16px;width:42px;height:42px;border-radius:50%;background:var(--accent3);color:#000;border:none;font-size:20px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.4);z-index:50;display:none;align-items:center;justify-content:center;transition:opacity .2s;line-height:1;font-weight:700"
+  style="position:fixed;bottom:160px;right:16px;width:42px;height:42px;border-radius:50%;background:var(--accent3);color:#000;border:none;font-size:20px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.4);z-index:50;display:none;align-items:center;justify-content:center;transition:opacity .2s;line-height:1;font-weight:700"
   title="トップへ">↑</button>
 
 <!-- ══ S3: 学習 ══ -->
@@ -595,6 +608,7 @@ input[type=file]{display:none}
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button id="fc-hint-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
         <button id="fc-hint-link" class="btn btn-info" style="font-size:12px;padding:6px 16px;display:none" onclick="openHintLink(this.dataset.url)">🔗 参考リンク</button>
+        <button id="fc-hint-copy" class="btn btn-secondary" style="font-size:12px;padding:6px 14px;display:none" onclick="copyUrl(document.getElementById('fc-hint-link').dataset.url)">📋</button>
       </div>
       <div id="fc-hint" style="display:none;margin-top:10px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.6;white-space:pre-wrap"></div>
     </div>
@@ -704,10 +718,10 @@ input[type=file]{display:none}
   </div>
 </div>
 
-<!-- ══ カード追加モーダル ══ -->
+<!-- ══ カード追加／編集モーダル ══ -->
 <div class="overlay" id="add-card-overlay" onclick="closeAddCardModal()">
   <div class="dialog" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto;padding-bottom:24px">
-    <h3 style="margin-bottom:12px">＋ カードを追加</h3>
+    <h3 id="ac-modal-title" style="margin-bottom:12px">＋ カードを追加</h3>
     <!-- カードタイプ選択 -->
     <div style="margin-bottom:12px">
       <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">カードタイプ</div>
@@ -767,9 +781,61 @@ input[type=file]{display:none}
       <input id="ac-tags" class="dialog-input" type="text" placeholder="例：歴史, 日本, 近代">
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1" onclick="submitAddCard()">追加する</button>
+      <button id="ac-submit-btn" class="btn btn-primary" style="flex:1" onclick="submitCardModal()">追加する</button>
       <button class="btn btn-secondary" style="flex:1" onclick="closeAddCardModal()">キャンセル</button>
     </div>
+    <div id="ac-delete-wrap" style="display:none;margin-top:10px">
+      <button class="btn btn-danger btn-full btn-sm" onclick="deleteEditingCard()">🗑️ このカードを削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ カード詳細モーダル ══ -->
+<div class="overlay" id="card-detail-overlay" onclick="closeCardDetail()">
+  <div class="dialog" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto;padding-bottom:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span id="cd-type-badge" class="badge badge-blue" style="font-size:11px"></span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="openEditCardModal()" style="background:var(--surface2);border:none;color:var(--text2);font-size:12px;font-weight:600;padding:5px 12px;border-radius:var(--radius-xs);cursor:pointer;font-family:inherit;transition:var(--trans)">✏️ 編集</button>
+        <button onclick="closeCardDetail()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1;padding:2px 6px">×</button>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">おもて</div>
+      <div id="cd-front" style="font-size:18px;font-weight:700;line-height:1.5;color:var(--text);white-space:pre-wrap;word-break:break-word"></div>
+    </div>
+    <div id="cd-back-wrap" style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">うら / 答え</div>
+      <div id="cd-back" style="font-size:16px;font-weight:600;line-height:1.5;color:var(--accent3);white-space:pre-wrap;word-break:break-word"></div>
+    </div>
+    <div id="cd-choices-wrap" style="display:none;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">選択肢</div>
+      <div id="cd-choices"></div>
+    </div>
+    <div id="cd-hint-wrap" style="display:none;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">💡 ヒント</div>
+      <div id="cd-hint" style="font-size:13px;color:var(--accent2);font-style:italic;line-height:1.6;white-space:pre-wrap;word-break:break-word"></div>
+    </div>
+    <div id="cd-link-wrap" style="display:none;margin-bottom:14px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="cd-link-btn" onclick="" class="btn btn-info btn-sm" style="font-size:12px;padding:6px 14px">🔗 参考リンク</button>
+        <button id="cd-copy-btn" onclick="copyHintLink()" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px">📋 URLをコピー</button>
+      </div>
+      <div id="cd-link-url" style="font-size:10px;color:var(--text3);margin-top:5px;word-break:break-all;line-height:1.5"></div>
+    </div>
+    <div id="cd-explanation-wrap" style="display:none;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">📖 解説</div>
+      <div id="cd-explanation" style="font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap;word-break:break-word"></div>
+    </div>
+    <div id="cd-checkpoints-wrap" style="display:none;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">採点ポイント</div>
+      <div id="cd-checkpoints"></div>
+    </div>
+    <div id="cd-tags-wrap" style="display:none;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px">🏷 タグ</div>
+      <div id="cd-tags" style="font-size:12px;color:var(--text2)"></div>
+    </div>
+    <button class="btn btn-secondary btn-full" onclick="closeCardDetail()" style="margin-top:4px">閉じる</button>
   </div>
 </div>
 
@@ -1177,7 +1243,7 @@ function renderCardList(){
     }
     return `<div style="display:flex;align-items:center;gap:6px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.05);background:${bgLine}">
       <span style="font-size:14px;flex-shrink:0" title="正誤実績">${resultDot}</span>
-      <div style="flex:1;min-width:0">
+      <div style="flex:1;min-width:0;cursor:pointer;-webkit-tap-highlight-color:rgba(78,205,196,.15)" onclick="openCardDetail('${c.id}')">
         <div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.front_question||c.front||''}</div>
         <div style="font-size:10px;color:var(--text3)">${c.type}${c.tags?.length?' · '+c.tags.join(', '):''}</div>
       </div>
@@ -1364,15 +1430,18 @@ function renderFlashcard(card){
   const hintEl=document.getElementById('fc-hint');
   const hintBtn=document.getElementById('fc-hint-btn');
   const linkBtn = document.getElementById('fc-hint-link');
+  const copyBtn = document.getElementById('fc-hint-copy');
   if(card.hint || card.hint_link){
     hintEl.innerHTML = card.hint ? 'ヒント: ' + card.hint.replace(/\n/g,'<br>') : '';
     hintEl.style.display = 'none';
     if(card.hint_link){
       linkBtn.dataset.url = card.hint_link;
       linkBtn.style.display = 'inline-flex';
+      if(copyBtn) copyBtn.style.display = 'inline-flex';
     } else {
       linkBtn.dataset.url = '';
       linkBtn.style.display = 'none';
+      if(copyBtn) copyBtn.style.display = 'none';
     }
     hintBtn.textContent = '💡 ヒントを見る';
     hintWrap.style.display = 'block';
@@ -1493,7 +1562,7 @@ function renderChoice(card){
   +((card.hint||card.hint_link)
     ? `<div id="choice-hint-wrap" style="margin:4px 0 2px">
          <button id="choice-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px" onclick="toggleChoiceHint()">💡 ヒントを見る</button>
-         ${card.hint_link ? `<button id="choice-hint-link" onclick="openHintLink('${card.hint_link.replace(/'/g,"\\'")}')" class="btn btn-info btn-sm" style="font-size:12px;padding:6px 14px;margin-left:8px">🔗 参考リンク</button>` : ''}
+         ${card.hint_link ? `<button id="choice-hint-link" onclick="openHintLink('${card.hint_link.replace(/'/g,"\\'")}')" class="btn btn-info btn-sm" style="font-size:12px;padding:6px 14px;margin-left:8px">🔗 参考リンク</button><button onclick="copyUrl('${card.hint_link.replace(/'/g,"\\'")}')" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 10px;margin-left:4px" title="URLをコピー">📋</button>` : ''}
          <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5;white-space:pre-wrap;word-break:break-word">${card.hint||''}</div>
        </div>`
     : '<div id="choice-hint-wrap" style="display:none"></div>')
@@ -1542,6 +1611,7 @@ function renderTyping(card){
   const typingHintEl = document.getElementById('typing-hint');
   typingHintEl.innerHTML = card.hint ? 'ヒント: '+card.hint.replace(/\n/g,'<br>') : '';
   let typingLinkBtn = document.getElementById('typing-hint-link');
+  let typingCopyBtn = document.getElementById('typing-hint-copy');
   if(!typingLinkBtn){
     typingLinkBtn = document.createElement('button');
     typingLinkBtn.id = 'typing-hint-link';
@@ -1550,12 +1620,25 @@ function renderTyping(card){
     typingLinkBtn.textContent = '🔗 参考リンク';
     typingHintEl.insertAdjacentElement('afterend', typingLinkBtn);
   }
+  if(!typingCopyBtn){
+    typingCopyBtn = document.createElement('button');
+    typingCopyBtn.id = 'typing-hint-copy';
+    typingCopyBtn.className = 'btn btn-secondary btn-sm';
+    typingCopyBtn.style.cssText = 'font-size:12px;padding:6px 10px;margin-top:6px;margin-left:6px;display:none';
+    typingCopyBtn.title = 'URLをコピー';
+    typingCopyBtn.textContent = '📋';
+    typingLinkBtn.insertAdjacentElement('afterend', typingCopyBtn);
+  }
   if(card.hint_link){
     typingLinkBtn.onclick = () => openHintLink(card.hint_link);
     typingLinkBtn.style.display = 'inline-flex';
+    typingCopyBtn.onclick = () => copyUrl(card.hint_link);
+    typingCopyBtn.style.display = 'inline-flex';
   } else {
     typingLinkBtn.onclick = null;
     typingLinkBtn.style.display = 'none';
+    typingCopyBtn.onclick = null;
+    typingCopyBtn.style.display = 'none';
   }
   const inp=document.getElementById('typing-input');
   inp.value='';inp.className='typing-input';inp.disabled=false;inp.focus();
@@ -1862,11 +1945,13 @@ function closeDialog(ok=false){
   if(window._dialogCb){ window._dialogCb(ok); window._dialogCb=null; }
 }
 
-// ══ カード追加モーダル ══
+// ══ カード追加／編集モーダル ══
 let _addCardType = 'flashcard';
+let _editingCardId = null; // null=追加モード, cardId=編集モード
 
 function openAddCardModal(){
   if(!state.currentDeck){ toast('デッキを開いてください'); return; }
+  _editingCardId = null;
   _addCardType = 'flashcard';
   // フィールドリセット
   ['ac-front','ac-back','ac-hint','ac-hint-link','ac-explanation','ac-tags'].forEach(id=>{
@@ -1875,13 +1960,62 @@ function openAddCardModal(){
   ['ac-c0','ac-c1','ac-c2','ac-c3','ac-accept','ac-checkpoints'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+  document.getElementById('ac-modal-title').textContent = '＋ カードを追加';
+  document.getElementById('ac-submit-btn').textContent  = '追加する';
+  document.getElementById('ac-delete-wrap').style.display = 'none';
   selectAddCardType('flashcard');
+  document.getElementById('add-card-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('ac-front')?.focus(), 120);
+}
+
+function openEditCardModal(){
+  const d = state.currentDeck;
+  if(!d) return;
+  // 現在詳細表示中のカードIDを取得
+  const cardId = document.getElementById('card-detail-overlay').dataset.cardId;
+  const card = d.cards.find(c=>c.id===cardId);
+  if(!card) return;
+
+  _editingCardId = cardId;
+  _addCardType = card.type;
+
+  // フィールドに現在値を流し込む
+  document.getElementById('ac-front').value       = card.front_question||card.front||'';
+  document.getElementById('ac-back').value        = card.back_answer||card.back||'';
+  document.getElementById('ac-hint').value        = card.hint||'';
+  document.getElementById('ac-hint-link').value   = card.hint_link||'';
+  document.getElementById('ac-explanation').value = card.explanation||'';
+  document.getElementById('ac-tags').value        = (card.tags||[]).join(', ');
+
+  // 4択選択肢
+  const choices = card.choices||[];
+  [0,1,2,3].forEach(i=>{ const el=document.getElementById('ac-c'+i); if(el) el.value=choices[i]||''; });
+
+  // タイピング許容答え
+  document.getElementById('ac-accept').value = (card.acceptable_answers||[]).join(', ');
+
+  // 記述式採点ポイント
+  document.getElementById('ac-checkpoints').value = (card.check_points||[]).join(', ');
+
+  document.getElementById('ac-modal-title').textContent = '✏️ カードを編集';
+  document.getElementById('ac-submit-btn').textContent  = '保存する';
+  document.getElementById('ac-delete-wrap').style.display = 'block';
+
+  selectAddCardType(card.type);
+  // 詳細モーダルを閉じてから編集モーダルを開く
+  closeCardDetail();
   document.getElementById('add-card-overlay').classList.add('show');
   setTimeout(()=>document.getElementById('ac-front')?.focus(), 120);
 }
 
 function closeAddCardModal(){
   document.getElementById('add-card-overlay').classList.remove('show');
+}
+
+// 追加 or 編集 を振り分け
+function submitCardModal(){
+  if(_editingCardId) submitEditCard();
+  else submitAddCard();
 }
 
 function selectAddCardType(type){
@@ -1972,6 +2106,77 @@ function submitAddCard(){
   if(state.gasUrl) saveDeckToGas(d);
 }
 
+function submitEditCard(){
+  const d = state.currentDeck;
+  if(!d || !_editingCardId) return;
+  const idx = d.cards.findIndex(c=>c.id===_editingCardId);
+  if(idx < 0){ toast('カードが見つかりません'); return; }
+
+  const front = document.getElementById('ac-front').value.trim();
+  const back  = document.getElementById('ac-back').value.trim();
+  if(!front){ toast('おもて（問題文）を入力してください'); return; }
+  if(!back) { toast('うら（答え）を入力してください'); return; }
+
+  const hint        = document.getElementById('ac-hint').value.trim();
+  const hintLink    = document.getElementById('ac-hint-link').value.trim();
+  const explanation = document.getElementById('ac-explanation').value.trim();
+  const tagsRaw     = document.getElementById('ac-tags').value.trim();
+  const tags        = tagsRaw ? tagsRaw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+
+  // 既存カードのフィールドを上書き（IDとtypeは保持）
+  const card = d.cards[idx];
+  card.type          = _addCardType;
+  card.front         = front;
+  card.back          = back;
+  card.front_question = front;
+  card.back_answer   = back;
+  card.hint          = hint;
+  card.hint_link     = hintLink;
+  card.explanation   = explanation;
+  card.tags          = tags;
+
+  if(_addCardType === 'choice'){
+    const cs = [0,1,2,3].map(i=>document.getElementById('ac-c'+i).value.trim()).filter(Boolean);
+    if(cs.length < 2){ toast('選択肢を2つ以上入力してください'); return; }
+    card.choices = cs;
+    card.correct_index = 0;
+  }
+  if(_addCardType === 'typing'){
+    const raw = document.getElementById('ac-accept').value.trim();
+    card.acceptable_answers = raw ? raw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  }
+  if(_addCardType === 'descriptive'){
+    const raw = document.getElementById('ac-checkpoints').value.trim();
+    card.check_points = raw ? raw.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  }
+
+  saveDecks();
+  closeAddCardModal();
+  renderCardList();
+  // 編集後に詳細モーダルを更新して再表示
+  openCardDetail(_editingCardId);
+  toast('カードを保存しました');
+  if(state.gasUrl) saveDeckToGas(d);
+}
+
+function deleteEditingCard(){
+  const d = state.currentDeck;
+  if(!d || !_editingCardId) return;
+  const card = d.cards.find(c=>c.id===_editingCardId);
+  if(!card) return;
+  showDialog('カードを削除',
+    `「${(card.front_question||card.front||'').slice(0,30)}」を削除しますか？`,
+    false, (ok)=>{
+      if(!ok) return;
+      d.cards = d.cards.filter(c=>c.id!==_editingCardId);
+      saveDecks();
+      closeAddCardModal();
+      renderDeckDetail();
+      toast('カードを削除しました');
+      if(state.gasUrl) saveDeckToGas(d);
+    });
+}
+
 // ── アプリ追加カードをGASにアップロード ──
 async function saveDeckToGas(deck){
   if(!state.gasUrl) return;
@@ -1984,6 +2189,76 @@ async function saveDeckToGas(deck){
       console.warn('saveDeck GAS error:', r?.error);
     }
   }catch(e){ console.warn('saveDeckToGas failed:', e); }
+}
+
+function closeCardDetail(){
+  document.getElementById('card-detail-overlay').classList.remove('show');
+}
+
+function openCardDetail(cardId){
+  const d = state.currentDeck;
+  if(!d) return;
+  const card = d.cards.find(c=>c.id===cardId);
+  if(!card) return;
+
+  // 編集ボタンからcardIdを参照できるようoverlay要素に保持
+  document.getElementById('card-detail-overlay').dataset.cardId = cardId;
+
+  const TYPE_LABELS = {flashcard:'🃏 フラッシュカード', choice:'✅ 4択クイズ', typing:'⌨️ タイピング', descriptive:'📝 記述式'};
+  document.getElementById('cd-type-badge').textContent = TYPE_LABELS[card.type]||card.type;
+
+  document.getElementById('cd-front').textContent = card.front_question||card.front||'';
+
+  // うら / 答え
+  const backEl = document.getElementById('cd-back');
+  const backWrap = document.getElementById('cd-back-wrap');
+  const back = card.back_answer||card.back||'';
+  if(back){ backEl.textContent = back; backWrap.style.display='block'; }
+  else backWrap.style.display='none';
+
+  // 選択肢（4択）
+  const choicesWrap = document.getElementById('cd-choices-wrap');
+  if(card.type==='choice' && card.choices?.length){
+    document.getElementById('cd-choices').innerHTML = card.choices.map((ch,i)=>
+      `<div style="padding:6px 10px;margin-bottom:5px;border-radius:var(--radius-xs);font-size:13px;${i===card.correct_index?'background:rgba(46,204,113,.15);color:var(--green);font-weight:600':'background:var(--surface2);color:var(--text2)'}">${String.fromCharCode(65+i)}. ${ch}${i===card.correct_index?' ✓':''}</div>`
+    ).join('');
+    choicesWrap.style.display='block';
+  } else { choicesWrap.style.display='none'; }
+
+  // ヒント
+  const hintWrap = document.getElementById('cd-hint-wrap');
+  if(card.hint){ document.getElementById('cd-hint').textContent=card.hint; hintWrap.style.display='block'; }
+  else hintWrap.style.display='none';
+
+  // 参考リンク
+  const linkWrap = document.getElementById('cd-link-wrap');
+  if(card.hint_link){
+    document.getElementById('cd-link-btn').onclick = ()=>openHintLink(card.hint_link);
+    document.getElementById('cd-copy-btn').dataset.url = card.hint_link;
+    document.getElementById('cd-link-url').textContent = card.hint_link;
+    linkWrap.style.display='block';
+  } else linkWrap.style.display='none';
+
+  // 解説
+  const explWrap = document.getElementById('cd-explanation-wrap');
+  if(card.explanation){ document.getElementById('cd-explanation').textContent=card.explanation; explWrap.style.display='block'; }
+  else explWrap.style.display='none';
+
+  // 採点ポイント
+  const cpWrap = document.getElementById('cd-checkpoints-wrap');
+  if(card.check_points?.length){
+    document.getElementById('cd-checkpoints').innerHTML = card.check_points.map(p=>`<span class="check-point">${p}</span>`).join('');
+    cpWrap.style.display='block';
+  } else cpWrap.style.display='none';
+
+  // タグ
+  const tagsWrap = document.getElementById('cd-tags-wrap');
+  if(card.tags?.length){
+    document.getElementById('cd-tags').textContent = card.tags.join('  /  ');
+    tagsWrap.style.display='block';
+  } else tagsWrap.style.display='none';
+
+  document.getElementById('card-detail-overlay').classList.add('show');
 }
 
 function confirmReset(){
@@ -2319,16 +2594,46 @@ function convertLinkUrl(url){
 }
 
 // リンクボタンにURLスキームを適用してから遷移
+function copyUrl(url){
+  if(!url) return;
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(url).then(()=>toast('📋 URLをコピーしました')).catch(()=>fallbackCopy(url));
+  } else {
+    fallbackCopy(url);
+  }
+}
+
+function copyHintLink(){
+  const url = document.getElementById('cd-copy-btn')?.dataset.url;
+  copyUrl(url);
+}
+
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try{ document.execCommand('copy'); toast('📋 URLをコピーしました'); }
+  catch{ toast('コピーできませんでした'); }
+  document.body.removeChild(ta);
+}
+
 function openHintLink(url){
   if(!url) return;
+  const converted = convertLinkUrl(url);
+  // <a> タグを動的生成してクリック → カスタムURLスキームでアプリ起動
+  const a = document.createElement('a');
+  a.href = converted;
+  // カスタムスキームの場合は同じウィンドウで遷移（_blankだと真っ暗なタブが残る）
   const scheme = getLinkScheme().trim();
-  if(scheme){
-    // カスタムスキームは window.open で起動（location.href では動作しない）
-    const converted = convertLinkUrl(url);
-    window.open(converted, '_blank');
-  } else {
-    window.open(url, '_blank');
+  if(!scheme){
+    a.target = '_blank';
+    a.rel = 'noopener';
   }
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 initTheme();
