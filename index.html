@@ -3,10 +3,6 @@
   StudyDeck 変更履歴
 =======================================================
 
-[v31] 「参照リンクの開き方」設定機能追加
-
-=======================================================
-
 [v30] カード一覧に完了日時・列見出し追加
 
   ① カード一覧に「完了」「出題」の列ヘッダーを追加
@@ -2307,21 +2303,32 @@ function initLinkScheme(){
   if(el) el.value = saved;
 }
 
-// https://... を カスタムスキームに変換する
+// https://... をカスタムスキームに変換する
 function convertLinkUrl(url){
-  const scheme = getLinkScheme();
+  const rawScheme = getLinkScheme().trim();
+  const scheme = rawScheme.replace(/:\/\/$/, ''); // 末尾の :// を除いたスキーム名
   if(!scheme || !url) return url;
+  // googlechrome 専用: http→googlechrome, https→googlechromes
+  if(scheme === 'googlechrome'){
+    return url.replace(/^http:\/\//, 'googlechrome://').replace(/^https:\/\//, 'googlechromes://');
+  }
   // すでにカスタムスキームなら変換しない
-  if(url.startsWith(scheme)) return url;
-  // http:// または https:// をスキームに置き換える
-  return url.replace(/^https?:\/\//, scheme);
+  if(url.match(new RegExp('^' + scheme + '://'))) return url;
+  // その他: http(s):// をカスタムスキーム:// に置き換える
+  return url.replace(/^https?:\/\//, scheme + '://');
 }
 
 // リンクボタンにURLスキームを適用してから遷移
 function openHintLink(url){
   if(!url) return;
-  const converted = convertLinkUrl(url);
-  window.location.href = converted;
+  const scheme = getLinkScheme().trim();
+  if(scheme){
+    // カスタムスキームは window.open で起動（location.href では動作しない）
+    const converted = convertLinkUrl(url);
+    window.open(converted, '_blank');
+  } else {
+    window.open(url, '_blank');
+  }
 }
 
 initTheme();
