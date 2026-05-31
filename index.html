@@ -3,6 +3,10 @@
   StudyDeck 変更履歴
 =======================================================
 
+[v31] 「参照リンクの開き方」設定機能追加
+
+=======================================================
+
 [v30] カード一覧に完了日時・列見出し追加
 
   ① カード一覧に「完了」「出題」の列ヘッダーを追加
@@ -436,6 +440,22 @@ input[type=file]{display:none}
             <button class="btn btn-info btn-sm" onclick="syncProgressDown()">⬇ 成績をダウンロード</button>
           </div>
         </div>
+        <div class="section-title">参照リンクの開き方</div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="gas-url-label">カスタムURLスキーム（任意）</div>
+          <input class="gas-url-input" id="link-scheme-input" type="text"
+            placeholder="例: googlechrome://, goodlinks://"
+            oninput="onLinkSchemeInput()">
+          <p style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.6">
+            入力すると「🔗 参考リンク」ボタンが指定アプリで開きます。<br>
+            空欄の場合はデフォルトブラウザで開きます。<br>
+            例: <code style="font-size:11px">googlechrome://</code> <code style="font-size:11px">goodlinks://</code> <code style="font-size:11px">obsidian://</code>
+          </p>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-info btn-sm" onclick="saveLinkScheme()">保存</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearLinkScheme()">クリア</button>
+          </div>
+        </div>
         <div class="section-title">データ管理</div>
         <div class="card" style="margin-bottom:12px">
           <p style="font-size:13px;color:var(--text2);margin-bottom:12px">全ての成績データをリセットします</p>
@@ -578,7 +598,7 @@ input[type=file]{display:none}
     <div id="fc-hint-wrap" style="display:none;padding:4px 4px 8px">
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button id="fc-hint-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="toggleFlashHint()">💡 ヒントを見る</button>
-        <a id="fc-hint-link" class="btn btn-info" target="_blank" rel="noopener" style="font-size:12px;padding:6px 16px;text-decoration:none;display:none">🔗 参考リンク</a>
+        <button id="fc-hint-link" class="btn btn-info" style="font-size:12px;padding:6px 16px;display:none" onclick="openHintLink(this.dataset.url)">🔗 参考リンク</button>
       </div>
       <div id="fc-hint" style="display:none;margin-top:10px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.6;white-space:pre-wrap"></div>
     </div>
@@ -812,6 +832,7 @@ function init(){
   state.gasUrl = localStorage.getItem(LS_GAS_URL)||'';
   renderUserGrid();
   if(state.users.length===0) addUser('ユーザー1','🐶','#4ecdc4');
+  initLinkScheme();
   // タグドロップダウンを外側クリックで閉じる
   document.addEventListener('click', e=>{
     const btn = document.getElementById('card-tag-filter-btn');
@@ -921,6 +942,7 @@ function selectUser(){
   // 設定タブのURL欄を反映
   const ui = document.getElementById('gas-url-input');
   if(ui) ui.value = state.gasUrl;
+  initLinkScheme();
 }
 
 function promptAddUser(){
@@ -1350,9 +1372,10 @@ function renderFlashcard(card){
     hintEl.innerHTML = card.hint ? 'ヒント: ' + card.hint.replace(/\n/g,'<br>') : '';
     hintEl.style.display = 'none';
     if(card.hint_link){
-      linkBtn.href = card.hint_link;
+      linkBtn.dataset.url = card.hint_link;
       linkBtn.style.display = 'inline-flex';
     } else {
+      linkBtn.dataset.url = '';
       linkBtn.style.display = 'none';
     }
     hintBtn.textContent = '💡 ヒントを見る';
@@ -1474,7 +1497,7 @@ function renderChoice(card){
   +((card.hint||card.hint_link)
     ? `<div id="choice-hint-wrap" style="margin:4px 0 2px">
          <button id="choice-hint-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:6px 14px" onclick="toggleChoiceHint()">💡 ヒントを見る</button>
-         ${card.hint_link ? `<a id="choice-hint-link" href="${card.hint_link}" target="_blank" rel="noopener" class="btn btn-info btn-sm" style="font-size:12px;padding:6px 14px;margin-left:8px;text-decoration:none">🔗 参考リンク</a>` : ''}
+         ${card.hint_link ? `<button id="choice-hint-link" onclick="openHintLink('${card.hint_link.replace(/'/g,"\\'")}')" class="btn btn-info btn-sm" style="font-size:12px;padding:6px 14px;margin-left:8px">🔗 参考リンク</button>` : ''}
          <div id="choice-hint-text" style="display:none;margin-top:6px;font-size:13px;color:var(--accent2);font-style:italic;line-height:1.5;white-space:pre-wrap;word-break:break-word">${card.hint||''}</div>
        </div>`
     : '<div id="choice-hint-wrap" style="display:none"></div>')
@@ -1524,19 +1547,18 @@ function renderTyping(card){
   typingHintEl.innerHTML = card.hint ? 'ヒント: '+card.hint.replace(/\n/g,'<br>') : '';
   let typingLinkBtn = document.getElementById('typing-hint-link');
   if(!typingLinkBtn){
-    typingLinkBtn = document.createElement('a');
+    typingLinkBtn = document.createElement('button');
     typingLinkBtn.id = 'typing-hint-link';
-    typingLinkBtn.target = '_blank';
-    typingLinkBtn.rel = 'noopener';
     typingLinkBtn.className = 'btn btn-info btn-sm';
-    typingLinkBtn.style.cssText = 'font-size:12px;padding:6px 14px;margin-top:6px;text-decoration:none;display:none';
+    typingLinkBtn.style.cssText = 'font-size:12px;padding:6px 14px;margin-top:6px;display:none';
+    typingLinkBtn.textContent = '🔗 参考リンク';
     typingHintEl.insertAdjacentElement('afterend', typingLinkBtn);
   }
   if(card.hint_link){
-    typingLinkBtn.href = card.hint_link;
-    typingLinkBtn.textContent = '🔗 参考リンク';
+    typingLinkBtn.onclick = () => openHintLink(card.hint_link);
     typingLinkBtn.style.display = 'inline-flex';
   } else {
+    typingLinkBtn.onclick = null;
     typingLinkBtn.style.display = 'none';
   }
   const inp=document.getElementById('typing-input');
@@ -2252,6 +2274,54 @@ function toggleTheme(){
 function initTheme(){
   const saved = localStorage.getItem(LS_THEME)||'dark';
   applyTheme(saved);
+}
+
+// ══════════════════════════════════════════════════════
+// 参照リンク URLスキーム設定
+// ══════════════════════════════════════════════════════
+const LS_LINK_SCHEME = 'sd_link_scheme';
+
+function getLinkScheme(){
+  return localStorage.getItem(LS_LINK_SCHEME)||'';
+}
+
+function onLinkSchemeInput(){
+  // 入力中は何もしない（保存ボタンで確定）
+}
+
+function saveLinkScheme(){
+  const val = document.getElementById('link-scheme-input').value.trim();
+  localStorage.setItem(LS_LINK_SCHEME, val);
+  toast(val ? '✅ URLスキームを保存しました: ' + val : '✅ クリアしました（デフォルトブラウザで開きます）');
+}
+
+function clearLinkScheme(){
+  localStorage.removeItem(LS_LINK_SCHEME);
+  document.getElementById('link-scheme-input').value = '';
+  toast('✅ URLスキームをクリアしました');
+}
+
+function initLinkScheme(){
+  const saved = getLinkScheme();
+  const el = document.getElementById('link-scheme-input');
+  if(el) el.value = saved;
+}
+
+// https://... を カスタムスキームに変換する
+function convertLinkUrl(url){
+  const scheme = getLinkScheme();
+  if(!scheme || !url) return url;
+  // すでにカスタムスキームなら変換しない
+  if(url.startsWith(scheme)) return url;
+  // http:// または https:// をスキームに置き換える
+  return url.replace(/^https?:\/\//, scheme);
+}
+
+// リンクボタンにURLスキームを適用してから遷移
+function openHintLink(url){
+  if(!url) return;
+  const converted = convertLinkUrl(url);
+  window.location.href = converted;
 }
 
 initTheme();
