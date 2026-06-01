@@ -3,6 +3,30 @@
   StudyDeck 変更履歴
 =======================================================
 
+[v33] ラベル変更・完了2段階・お気に入り☆・左スワイプ削除
+
+  ① 学習ボタンのラベル変更
+     - 「不正解」→「復習する」、「正解」→「覚えた」に統一（全モード）
+
+  ② カード一覧の完了ボタンを2段階に
+     - 「復習する」またはクリア状態で1タップ → 1段階目（📖）
+     - 「覚えた」または1段階目で1タップ → 2段階目（🎓）
+     - 2段階目でタップするとクリアに戻る（3択ローテーション）
+     - 日付はタップごと・カード学習での正誤記録時に更新
+
+  ③ お気に入り☆機能
+     - カード一覧左端の色変更マーク(⬜🟢🔴)を廃止し、代わりに☆(お気に入り)ボタンを配置
+     - ☆: 未お気に入り、★: お気に入り（黄色強調）
+     - 出題選択用の「★/☆」表記を廃止し「📌」マークに変更
+
+  ④ 左スワイプでカード削除（2段階）
+     - カード一覧で左にスワイプ → 「削除」ボタン（赤）が出現
+     - 削除ボタンタップ → ソフト削除（deletedフラグ付きで非表示）
+     - 削除後に行が縮んで「完全削除」ボタンが出現
+     - 完全削除ボタンタップ → デッキからカードを完全に除去（確認なし）
+
+=======================================================
+
 [v32] カード一覧タップで詳細表示 + ↑ボタン位置調整
 
   ① カード一覧のカード行をタップするとカード詳細モーダルが開く
@@ -477,7 +501,7 @@ input[type=file]{display:none}
         </div>
         <div class="section-title">アプリ情報</div>
         <div class="card">
-          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.4<br>GAS連携対応 / オフライン対応 PWA</p>
+          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.5<br>GAS連携対応 / オフライン対応 PWA</p>
         </div>
       </div>
     </div>
@@ -568,9 +592,10 @@ input[type=file]{display:none}
     </div>
     <!-- カード一覧ヘッダー行 -->
     <div style="display:flex;align-items:center;gap:6px;padding:4px 2px 4px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:2px">
+      <span style="width:28px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.03em;flex-shrink:0">☆</span>
       <span style="flex:1"></span>
       <div style="display:flex;gap:4px;flex-shrink:0">
-        <span style="width:30px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.03em">完了</span>
+        <span style="width:44px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.03em">完了</span>
         <span style="width:30px;text-align:center;font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.03em">出題</span>
       </div>
     </div>
@@ -615,8 +640,8 @@ input[type=file]{display:none}
   </div>
   <div class="flash-btns">
     <button class="btn btn-secondary" onclick="prevCard()">← 戻る</button>
-    <button class="btn btn-danger" onclick="answerFlash(false)">✗ 不正解</button>
-    <button class="btn btn-success" onclick="answerFlash(true)">✓ 正解</button>
+    <button class="btn btn-danger" onclick="answerFlash(false)">↩ 復習する</button>
+    <button class="btn btn-success" onclick="answerFlash(true)">✓ 覚えた</button>
   </div>
 </div>
 
@@ -645,8 +670,8 @@ input[type=file]{display:none}
     <div style="flex:1"></div>
     <div class="study-nav">
       <button class="btn btn-secondary" id="desc-show-btn" onclick="showModelAnswer()">模範解答を見る</button>
-      <button class="btn btn-danger" id="desc-ng-btn" onclick="answerDesc(false)" style="display:none">✗ あとで復習</button>
-      <button class="btn btn-success" id="desc-ok-btn" onclick="answerDesc(true)" style="display:none">✓ 理解した</button>
+      <button class="btn btn-danger" id="desc-ng-btn" onclick="answerDesc(false)" style="display:none">↩ 復習する</button>
+      <button class="btn btn-success" id="desc-ok-btn" onclick="answerDesc(true)" style="display:none">✓ 覚えた</button>
     </div>
   </div>
 
@@ -670,8 +695,8 @@ input[type=file]{display:none}
     <div class="study-nav" style="flex-wrap:wrap;gap:8px">
       <button class="btn btn-secondary btn-sm" onclick="prevCard()">← 戻る</button>
       <button class="btn btn-secondary" id="desc-show-btn" onclick="showModelAnswer()">模範解答を見る</button>
-      <button class="btn btn-success" id="desc-ok-btn" onclick="answerDesc(true)" style="display:none">✓ 理解した</button>
-      <button class="btn btn-danger" id="desc-ng-btn" onclick="answerDesc(false)" style="display:none">✗ 未理解</button>
+      <button class="btn btn-success" id="desc-ok-btn" onclick="answerDesc(true)" style="display:none">✓ 覚えた</button>
+      <button class="btn btn-danger" id="desc-ng-btn" onclick="answerDesc(false)" style="display:none">↩ 復習する</button>
     </div>
   </div>
 
@@ -694,7 +719,7 @@ input[type=file]{display:none}
     </div>
     <div class="result-bars" id="result-bars"></div>
     <div class="card" style="margin-bottom:12px">
-      <div class="section-title">苦手カード</div>
+      <div class="section-title">復習カード</div>
       <div id="weak-cards-list"></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -1202,15 +1227,17 @@ function renderCardList(){
   // タイプフィルター適用
   let filtered = deckCardTypeFilter==='all' ? d.cards : d.cards.filter(c=>c.type===deckCardTypeFilter);
 
-  // タグフィルター適用（選択タグをすべて持つカードのみ、AND条件）
-  // タグフィルター適用（選択タグのいずれかを持つカード、OR条件）
+  // ソフト削除済みを除外
+  filtered = filtered.filter(c=>!cardFlags[c.id]?.deleted);
+
+  // タグフィルター適用（OR条件）
   if(deckCardTagFilter.size > 0){
     filtered = filtered.filter(c=>
       [...deckCardTagFilter].some(t=>(c.tags||[]).includes(t))
     );
   }
 
-  // 検索フィルター適用（おもて・うら・タグ・解説を部分一致）
+  // 検索フィルター適用
   if(deckCardSearch.trim()){
     const q = deckCardSearch.trim().toLowerCase();
     filtered = filtered.filter(c=>{
@@ -1228,49 +1255,94 @@ function renderCardList(){
     preview.innerHTML=`<p style="font-size:13px;color:var(--text3);text-align:center;padding:16px">該当するカードがありません</p>`;
     return;
   }
+
   preview.innerHTML = filtered.map((c,i)=>{
-    const r=cp[c.id];
-    const resultDot = r===undefined?'⬜':r?'🟢':'🔴';
-    const cleared = !!(cardFlags[c.id]?.cleared);
+    // 完了状態: 0=未完了, 1=1段階目(復習), 2=2段階目(覚えた)
+    const clearStage = cardFlags[c.id]?.clearStage||0;
     const clearedAt = cardFlags[c.id]?.clearedAt;
-    const pinned  = !!(cardFlags[c.id]?.pinned);
+    const favorited = !!(cardFlags[c.id]?.favorited);
+    const pinned    = !!(cardFlags[c.id]?.pinned);
     const bgLine = i%2===0?'transparent':'rgba(255,255,255,.02)';
-    // 完了日時を「M/D」形式で表示
+
+    // 完了ボタンの見た目
+    let clearBtnStyle, clearBtnContent;
+    if(clearStage===0){
+      clearBtnStyle = `border:1.5px solid var(--surface3);background:var(--surface2);`;
+      clearBtnContent = '';
+    } else if(clearStage===1){
+      clearBtnStyle = `border:1.5px solid var(--accent2);background:rgba(245,166,35,.15);`;
+      clearBtnContent = '📖';
+    } else {
+      clearBtnStyle = `border:1.5px solid var(--green);background:rgba(46,204,113,.15);`;
+      clearBtnContent = '🎓';
+    }
+    // 日付表示（2段階目のみ）
     let clearedDateStr = '';
-    if(cleared && clearedAt){
+    if(clearStage===2 && clearedAt){
       const dt = new Date(clearedAt);
       clearedDateStr = `<div style="font-size:9px;color:var(--green);line-height:1.3;text-align:right">${dt.getFullYear()}<br>${(dt.getMonth()+1)}/${dt.getDate()}</div>`;
     }
-    return `<div style="display:flex;align-items:center;gap:6px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.05);background:${bgLine}">
-      <span style="font-size:14px;flex-shrink:0" title="正誤実績">${resultDot}</span>
-      <div style="flex:1;min-width:0;cursor:pointer;-webkit-tap-highlight-color:rgba(78,205,196,.15)" onclick="openCardDetail('${c.id}')">
-        <div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.front_question||c.front||''}</div>
-        <div style="font-size:10px;color:var(--text3)">${c.type}${c.tags?.length?' · '+c.tags.join(', '):''}</div>
+
+    return `<div id="crow-${c.id}" style="position:relative;overflow:hidden">
+      <!-- スワイプ背景 -->
+      <div id="swipe-bg-${c.id}" style="position:absolute;inset:0;background:var(--red);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;opacity:0;pointer-events:none;transition:opacity .15s">
+        <span style="color:#fff;font-size:12px;font-weight:700">削除</span>
       </div>
-      <div style="display:flex;gap:4px;flex-shrink:0">
-        <div style="display:flex;align-items:center;gap:3px">
-          ${clearedDateStr}
-          <button onclick="toggleCardFlag('${c.id}','cleared')"
-            title="${cleared?'完了済み（タップで解除）':'完了マークをつける'}"
-            style="width:30px;height:30px;border-radius:50%;border:1.5px solid ${cleared?'var(--green)':'var(--surface3)'};background:${cleared?'rgba(46,204,113,.15)':'var(--surface2)'};font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0">
-            ${cleared?'✓':''}
+      <!-- メイン行 -->
+      <div id="crow-inner-${c.id}" style="display:flex;align-items:center;gap:6px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.05);background:${bgLine};position:relative;touch-action:pan-y;user-select:none"
+        data-card-id="${c.id}">
+        <!-- お気に入り☆ -->
+        <button onclick="event.stopPropagation();toggleCardFlag('${c.id}','favorited')"
+          title="${favorited?'お気に入り（タップで解除）':'お気に入りに追加'}"
+          style="width:28px;height:28px;border-radius:50%;border:none;background:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;color:${favorited?'var(--accent2)':'var(--text3)'}">
+          ${favorited?'★':'☆'}
+        </button>
+        <!-- カード本文（タップで詳細） -->
+        <div style="flex:1;min-width:0;cursor:pointer;-webkit-tap-highlight-color:rgba(78,205,196,.15)" onclick="openCardDetail('${c.id}')">
+          <div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.front_question||c.front||''}</div>
+          <div style="font-size:10px;color:var(--text3)">${c.type}${c.tags?.length?' · '+c.tags.join(', '):''}</div>
+        </div>
+        <!-- 完了ボタン（2段階）＋出題ボタン -->
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:3px">
+            ${clearedDateStr}
+            <button onclick="event.stopPropagation();cycleCardClear('${c.id}')"
+              title="${clearStage===0?'未学習':clearStage===1?'学習中':'習得済み'}"
+              style="width:30px;height:30px;border-radius:50%;${clearBtnStyle}font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0">
+              ${clearBtnContent}
+            </button>
+          </div>
+          <button onclick="event.stopPropagation();toggleCardFlag('${c.id}','pinned')"
+            title="${pinned?'出題指定中':'出題指定'}"
+            style="width:30px;height:30px;border-radius:50%;border:1.5px solid ${pinned?'var(--accent2)':'var(--surface3)'};background:${pinned?'rgba(245,166,35,.15)':'var(--surface2)'};font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0">
+            ${pinned?'📌':'📌'}
           </button>
         </div>
-        <button onclick="toggleCardFlag('${c.id}','pinned')"
-          title="${pinned?'出題指定中':'出題指定　をマーク'}"
-          style="width:30px;height:30px;border-radius:50%;border:1.5px solid ${pinned?'var(--accent2)':'var(--surface3)'};background:${pinned?'rgba(245,166,35,.15)':'var(--surface2)'};font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0">
-          ${pinned?'★':'☆'}
-        </button>
+      </div>
+      <!-- 削除確認行（スワイプ後に表示） -->
+      <div id="delete-row-${c.id}" style="display:none;padding:4px 8px 6px;background:rgba(231,76,60,.08);border-bottom:1px solid rgba(231,76,60,.2)">
+        <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
+          <span style="font-size:11px;color:var(--text3);flex:1">「${(c.front_question||c.front||'').slice(0,20)}」を削除</span>
+          <button onclick="permanentDeleteCard('${c.id}')"
+            style="background:var(--red);color:#fff;border:none;border-radius:var(--radius-xs);padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">完全削除</button>
+          <button onclick="cancelSwipeDelete('${c.id}')"
+            style="background:var(--surface2);color:var(--text2);border:none;border-radius:var(--radius-xs);padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit">キャンセル</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 
-  // ★件数バナーを学習開始ボタン上に表示
+  // スワイプイベントを各行に設定
+  filtered.forEach(c=>{
+    setupSwipeDelete(c.id);
+  });
+
+  // 出題指定バナー
   const allFlags = {};
   const uid2 = state.currentUser?.id;
   const LS2 = 'sd_cardflags_'+uid2+'_'+d.id;
   try{ Object.assign(allFlags, JSON.parse(localStorage.getItem(LS2)||'{}')); }catch{}
-  const pinnedCount = Object.values(allFlags).filter(f=>f?.pinned).length;
+  const pinnedCount = d.cards.filter(c=>allFlags[c.id]?.pinned && !allFlags[c.id]?.deleted).length;
   let banner = document.getElementById('pinned-banner');
   if(!banner){
     banner = document.createElement('div');
@@ -1278,14 +1350,132 @@ function renderCardList(){
     const startBtn = document.querySelector('#s-deck .btn-primary');
     if(startBtn) startBtn.parentElement.insertBefore(banner, startBtn);
   }
-    if(pinnedCount > 0){
+  if(pinnedCount > 0){
     banner.innerHTML = `<div style="font-size:12px;color:var(--accent2);background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:var(--radius-xs);padding:6px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px">
-      <span style="flex:1;text-align:center">★ 出題指定 ${pinnedCount} 問 → 学習を開始するとその問題のみ出題されます</span>
-      <button onclick="clearAllPinned()" style="background:rgba(245,166,35,.3);border:none;color:var(--accent2);font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:inherit">★一括解除</button>
+      <span style="flex:1;text-align:center">📌 出題指定 ${pinnedCount} 問 → 学習を開始するとその問題のみ出題されます</span>
+      <button onclick="clearAllPinned()" style="background:rgba(245,166,35,.3);border:none;color:var(--accent2);font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;cursor:pointer;white-space:nowrap;font-family:inherit">📌一括解除</button>
     </div>`;
   } else {
     banner.innerHTML = '';
   }
+}
+
+// スワイプ削除のタッチ/マウスイベント設定
+function setupSwipeDelete(cardId){
+  const inner = document.getElementById('crow-inner-'+cardId);
+  if(!inner) return;
+  let startX=0, startY=0, moved=false, swiping=false;
+  const THRESHOLD = 60;
+
+  function onStart(e){
+    const t = e.touches?.[0]||e;
+    startX = t.clientX; startY = t.clientY;
+    moved = false; swiping = false;
+  }
+  function onMove(e){
+    const t = e.touches?.[0]||e;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if(!swiping && Math.abs(dx)<5 && Math.abs(dy)<5) return;
+    if(!swiping){
+      if(Math.abs(dx) > Math.abs(dy)) swiping=true;
+      else return;
+    }
+    if(dx < 0){
+      e.preventDefault();
+      moved = true;
+      const pct = Math.min(-dx/THRESHOLD, 1);
+      const bg = document.getElementById('swipe-bg-'+cardId);
+      if(bg) bg.style.opacity = pct;
+    }
+  }
+  function onEnd(e){
+    const t = (e.changedTouches?.[0])||e;
+    const dx = t.clientX - startX;
+    const bg = document.getElementById('swipe-bg-'+cardId);
+    if(bg) bg.style.opacity = 0;
+    if(moved && dx < -THRESHOLD){
+      softDeleteCard(cardId);
+    }
+  }
+
+  inner.addEventListener('touchstart', onStart, {passive:true});
+  inner.addEventListener('touchmove', onMove, {passive:false});
+  inner.addEventListener('touchend', onEnd);
+}
+
+// ソフト削除（行を非表示にして完全削除行を表示）
+function softDeleteCard(cardId){
+  const inner = document.getElementById('crow-inner-'+cardId);
+  const deleteRow = document.getElementById('delete-row-'+cardId);
+  if(inner) inner.style.display='none';
+  if(deleteRow) deleteRow.style.display='block';
+  // flagsにdeletedをセット
+  const d = state.currentDeck;
+  const uid = state.currentUser?.id;
+  if(!d||!uid) return;
+  const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+d.id;
+  let cardFlags = {};
+  try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+  if(!cardFlags[cardId]) cardFlags[cardId]={};
+  cardFlags[cardId].deleted = true;
+  localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
+}
+
+// 削除キャンセル（元に戻す）
+function cancelSwipeDelete(cardId){
+  const inner = document.getElementById('crow-inner-'+cardId);
+  const deleteRow = document.getElementById('delete-row-'+cardId);
+  if(inner) inner.style.display='flex';
+  if(deleteRow) deleteRow.style.display='none';
+  // flagsのdeleted解除
+  const d = state.currentDeck;
+  const uid = state.currentUser?.id;
+  if(!d||!uid) return;
+  const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+d.id;
+  let cardFlags = {};
+  try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+  if(cardFlags[cardId]) cardFlags[cardId].deleted = false;
+  localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
+}
+
+// 完全削除（デッキからカードを除去）
+function permanentDeleteCard(cardId){
+  const d = state.currentDeck;
+  if(!d) return;
+  d.cards = d.cards.filter(c=>c.id!==cardId);
+  saveDecks();
+  // flagsからも削除
+  const uid = state.currentUser?.id;
+  if(uid){
+    const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+d.id;
+    let cardFlags = {};
+    try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+    delete cardFlags[cardId];
+    localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
+  }
+  renderCardList();
+  toast('カードを完全削除しました');
+  if(state.gasUrl) saveDeckToGas(d);
+}
+
+// 完了3段階ローテーション（0→1→2→0）
+function cycleCardClear(cardId){
+  const d = state.currentDeck;
+  const uid = state.currentUser?.id;
+  if(!d||!uid) return;
+  const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+d.id;
+  let cardFlags = {};
+  try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+  if(!cardFlags[cardId]) cardFlags[cardId]={};
+  const cur = cardFlags[cardId].clearStage||0;
+  const next = (cur+1)%3;
+  cardFlags[cardId].clearStage = next;
+  // 2段階目のみ日付更新（1→2になったとき）
+  if(next===2) cardFlags[cardId].clearedAt = new Date().toISOString();
+  else if(next===0) delete cardFlags[cardId].clearedAt;
+  localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
+  renderCardList();
 }
 
 function toggleCardFlag(cardId, flagKey){
@@ -1297,11 +1487,6 @@ function toggleCardFlag(cardId, flagKey){
   try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
   if(!cardFlags[cardId]) cardFlags[cardId]={};
   cardFlags[cardId][flagKey] = !cardFlags[cardId][flagKey];
-  // clearedフラグをONにした場合は日時を記録、OFFにした場合は削除
-  if(flagKey==='cleared'){
-    if(cardFlags[cardId][flagKey]) cardFlags[cardId].clearedAt = new Date().toISOString();
-    else delete cardFlags[cardId].clearedAt;
-  }
   localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
   renderCardList();
 }
@@ -1316,7 +1501,7 @@ function clearAllPinned(){
   Object.keys(cardFlags).forEach(id=>{ if(cardFlags[id]) cardFlags[id].pinned = false; });
   localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
   renderCardList();
-  toast('★出題指定をすべて解除しました');
+  toast('📌出題指定をすべて解除しました');
 }
 
 function setMode(m){
@@ -1355,7 +1540,7 @@ function startStudy(){
     const pinnedCards = cards.filter(c=>pinnedSet.has(c.id));
     if(pinnedCards.length > 0){
       cards = pinnedCards;
-      toast('★出題指定の '+cards.length+' 問を出題します');
+      toast('📌 出題指定の '+cards.length+' 問を出題します');
     }
   }
 
@@ -1702,6 +1887,27 @@ function recordResult(card, correct){
   dp.correct=Object.values(dp.cards).filter(Boolean).length;
   dp.lastStudied=new Date().toISOString();
   saveProgress(prog);
+
+  // カード学習結果でclearStageと日付を更新
+  if(uid){
+    const LS_CARD_FLAGS = 'sd_cardflags_'+uid+'_'+state.currentDeck.id;
+    let cardFlags = {};
+    try{ cardFlags = JSON.parse(localStorage.getItem(LS_CARD_FLAGS)||'{}'); }catch{}
+    if(!cardFlags[card.id]) cardFlags[card.id]={};
+    const cur = cardFlags[card.id].clearStage||0;
+    if(correct){
+      // 正解なら2段階目（覚えた）に昇格（既に2段階目なら日付更新のみ）
+      cardFlags[card.id].clearStage = 2;
+      cardFlags[card.id].clearedAt = new Date().toISOString();
+    } else {
+      // 不正解なら1段階目（復習）に降格（0の場合も1に）
+      if(cur !== 0) {
+        cardFlags[card.id].clearStage = 1;
+        cardFlags[card.id].clearedAt = new Date().toISOString();
+      }
+    }
+    localStorage.setItem(LS_CARD_FLAGS, JSON.stringify(cardFlags));
+  }
 }
 
 function nextCard(){
@@ -1733,8 +1939,8 @@ function endStudy(){
   document.getElementById('result-score').textContent=pct+'%';
   document.getElementById('result-grade').textContent=grade;
   document.getElementById('result-bars').innerHTML=`
-    <div class="r-bar"><div class="r-bar-val" style="color:var(--green)">${correct}</div><div class="r-bar-lbl">正解</div></div>
-    <div class="r-bar"><div class="r-bar-val" style="color:var(--red)">${total-correct}</div><div class="r-bar-lbl">不正解</div></div>
+    <div class="r-bar"><div class="r-bar-val" style="color:var(--green)">${correct}</div><div class="r-bar-lbl">覚えた</div></div>
+    <div class="r-bar"><div class="r-bar-val" style="color:var(--red)">${total-correct}</div><div class="r-bar-lbl">復習する</div></div>
     <div class="r-bar"><div class="r-bar-val">${total}</div><div class="r-bar-lbl">合計</div></div>`;
   const weak=state.studyResults.filter(r=>!r.correct);
   document.getElementById('weak-cards-list').innerHTML=weak.length?weak.map(r=>
