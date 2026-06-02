@@ -3,6 +3,21 @@
   StudyDeck 変更履歴
 =======================================================
 
+[v35] タグ一括解除・検索クリア・ヒント表示
+
+  ① タグフィルターの一括解除ボタン
+     - タグ選択中に「✕ 解除」ボタンを表示
+     - タップで全タグ選択を解除
+
+  ② 検索欄のクリアボタン
+     - 入力中に「✕」ボタンを表示
+     - タップで検索欄をクリア
+
+  ③ カード一覧にヒント冒頭10文字を追加
+     - 表示順: カードの種類 · タグ · ヒント（最初の10文字）
+
+=======================================================
+
 [v33] ラベル変更・完了2段階・お気に入り☆・左スワイプ削除
 
   ① 学習ボタンのラベル変更
@@ -575,20 +590,30 @@ input[type=file]{display:none}
     <!-- ▼ タグフィルター（複数選択ドロップダウン）＋検索欄 -->
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:flex-start">
       <div style="flex:1;min-width:0;position:relative">
-        <button id="card-tag-filter-btn" onclick="toggleTagDropdown()"
-          style="width:100%;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:5px 8px;font-family:inherit;font-size:12px;color:var(--text2);outline:none;cursor:pointer;text-align:left;transition:var(--trans);display:flex;justify-content:space-between;align-items:center;gap:4px">
-          <span id="card-tag-filter-label">🏷 タグ: すべて</span>
-          <span style="font-size:10px;opacity:.6">▼</span>
-        </button>
+        <div style="display:flex;gap:4px;align-items:center">
+          <button id="card-tag-filter-btn" onclick="toggleTagDropdown()"
+            style="flex:1;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:5px 8px;font-family:inherit;font-size:12px;color:var(--text2);outline:none;cursor:pointer;text-align:left;transition:var(--trans);display:flex;justify-content:space-between;align-items:center;gap:4px">
+            <span id="card-tag-filter-label">🏷 タグ: すべて</span>
+            <span style="font-size:10px;opacity:.6">▼</span>
+          </button>
+          <button id="tag-clear-btn" onclick="clearAllTagFilters()"
+            title="タグ選択を解除"
+            style="display:none;flex-shrink:0;background:rgba(233,69,96,.15);border:1.5px solid var(--accent);border-radius:var(--radius-xs);padding:4px 8px;font-size:11px;font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1;align-items:center;gap:2px;transition:var(--trans)">✕ 解除</button>
+        </div>
         <div id="card-tag-dropdown"
           style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--accent3);border-radius:var(--radius-xs);z-index:60;max-height:200px;overflow-y:auto;box-shadow:var(--shadow)">
         </div>
       </div>
-      <input id="card-search-input" type="text" placeholder="🔍 カードを検索…"
-        oninput="setDeckCardSearch(this.value)"
-        onkeydown="if(event.key==='Enter'){this.blur();}"
-        style="flex:1.5;min-width:0;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:5px 8px;font-family:inherit;font-size:12px;color:var(--text);outline:none;transition:var(--trans)"
-        onfocus="this.style.borderColor='var(--accent3)'" onblur="this.style.borderColor='var(--surface3)'">
+      <div style="flex:1.5;min-width:0;position:relative;display:flex;align-items:center">
+        <input id="card-search-input" type="text" placeholder="🔍 カードを検索…"
+          oninput="setDeckCardSearch(this.value)"
+          onkeydown="if(event.key==='Enter'){this.blur();}"
+          style="width:100%;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-xs);padding:5px 28px 5px 8px;font-family:inherit;font-size:12px;color:var(--text);outline:none;transition:var(--trans)"
+          onfocus="this.style.borderColor='var(--accent3)'" onblur="this.style.borderColor='var(--surface3)'">
+        <button id="card-search-clear-btn" onclick="clearCardSearch()"
+          title="検索をクリア"
+          style="position:absolute;right:4px;background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;display:none">✕</button>
+      </div>
     </div>
     <!-- カード一覧ヘッダー行 -->
     <div style="display:flex;align-items:center;gap:6px;padding:4px 2px 4px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:2px">
@@ -1126,6 +1151,8 @@ function renderDeckDetail(){
   // 検索欄を復元
   const searchEl = document.getElementById('card-search-input');
   if(searchEl) searchEl.value = deckCardSearch;
+  const searchClearBtn = document.getElementById('card-search-clear-btn');
+  if(searchClearBtn) searchClearBtn.style.display = deckCardSearch ? 'block' : 'none';
 
   renderCardList();
 }
@@ -1206,10 +1233,33 @@ function updateTagFilterLabel(){
     : '🏷 ' + [...deckCardTagFilter].join(', ');
   const btn = document.getElementById('card-tag-filter-btn');
   if(btn) btn.style.borderColor = deckCardTagFilter.size ? 'var(--accent3)' : 'var(--surface3)';
+  // 一括解除ボタンの表示制御
+  const clearBtn = document.getElementById('tag-clear-btn');
+  if(clearBtn) clearBtn.style.display = deckCardTagFilter.size > 0 ? 'inline-flex' : 'none';
+}
+
+function clearAllTagFilters(){
+  deckCardTagFilter.clear();
+  document.querySelectorAll('.tag-chk').forEach(c=>{ c.checked=false; });
+  const allChk = document.getElementById('tag-chk-all');
+  if(allChk) allChk.checked = true;
+  updateTagFilterLabel();
+  renderCardList();
 }
 
 function setDeckCardSearch(q){
   deckCardSearch = q;
+  const clearBtn = document.getElementById('card-search-clear-btn');
+  if(clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+  renderCardList();
+}
+
+function clearCardSearch(){
+  deckCardSearch = '';
+  const input = document.getElementById('card-search-input');
+  if(input) input.value = '';
+  const clearBtn = document.getElementById('card-search-clear-btn');
+  if(clearBtn) clearBtn.style.display = 'none';
   renderCardList();
 }
 
@@ -1301,7 +1351,7 @@ function renderCardList(){
         <!-- カード本文（タップで詳細） -->
         <div style="flex:1;min-width:0;cursor:pointer;-webkit-tap-highlight-color:rgba(78,205,196,.15)" onclick="openCardDetail('${c.id}')">
           <div style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.front_question||c.front||''}</div>
-          <div style="font-size:10px;color:var(--text3)">${c.type}${c.tags?.length?' · '+c.tags.join(', '):''}</div>
+          <div style="font-size:10px;color:var(--text3)">${c.type}${c.tags?.length?' · '+c.tags.join(', '):''}${c.hint ? ' · <span style="color:var(--accent2);font-style:italic">' + c.hint.slice(0,20) + (c.hint.length>20?'…':'') + '</span>' : ''}</div>
         </div>
         <!-- 完了ボタン（2段階）＋出題ボタン -->
         <div style="display:flex;gap:4px;flex-shrink:0">
