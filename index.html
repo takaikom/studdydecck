@@ -1,7 +1,12 @@
 <!--
+  ※コードを修正したら以下に変更履歴コメントを更新すること！
 =======================================================
   StudyDeck 変更履歴
 =======================================================
+[v36] 成績アップロード・ダウンロードにカードの完了状況、日付、お気に入りを追加
+  ① 成績アップロード・ダウンロードにカードの完了状況、日付、お気に入りも含める
+     - デッキ全体のJSONに、各カードの状態（完了✓、完了日付、★お気に入り）を追加して保存
+     - GASアップロード・ダウンロード時にこれらの情報も送受信してデッキに反映
 
 [v35] タグ一括解除・検索クリア・ヒント表示
 
@@ -936,6 +941,23 @@ function saveDecks(){ localStorage.setItem(LS_DECKS, JSON.stringify(state.decks)
 function saveProgress(data){ localStorage.setItem(LS_PROGRESS, JSON.stringify(data)); }
 function loadProgress(){
   try{ return JSON.parse(localStorage.getItem(LS_PROGRESS)||'{}'); }catch{ return {}; }
+}
+
+function getCardFlagsKey(uid, deckId){ return 'sd_cardflags_'+uid+'_'+deckId; }
+function loadCardFlags(uid, deckId){
+  try{ return JSON.parse(localStorage.getItem(getCardFlagsKey(uid, deckId))||'{}'); }catch{return {}; }
+}
+function saveCardFlags(uid, deckId, flags){
+  localStorage.setItem(getCardFlagsKey(uid, deckId), JSON.stringify(flags||{}));
+}
+function mergeRemoteCardFlags(localFlags, remoteFlags){
+  if(!remoteFlags || typeof remoteFlags !== 'object') return localFlags;
+  const merged = {...localFlags};
+  Object.entries(remoteFlags).forEach(([cardId, rf])=>{
+    if(!rf || typeof rf !== 'object') return;
+    merged[cardId] = {...merged[cardId]||{}, ...rf};
+  });
+  return merged;
 }
 
 function init(){
@@ -2673,11 +2695,13 @@ async function syncProgressUp(){
       const dp = up[deckId];
       const cards = dp.cards||{};
       const results = Object.entries(cards).map(([cardId,correct])=>({cardId,correct}));
-      if(!results.length) continue;
+      const cardFlags = loadCardFlags(uid, deckId);
+      const hasCardFlags = Object.keys(cardFlags).length > 0;
+      if(!results.length && !hasCardFlags) continue;
       const sessionId = uid+'_'+deckId+'_sync_'+Date.now();
-      const r = await gasPost({
-        action:'saveProgress', userId:uid, deckId, sessionId, results
-      });
+      const payload = { action:'saveProgress', userId:uid, deckId, sessionId, results };
+      if(hasCardFlags) payload.cardFlags = cardFlags;
+      const r = await gasPost(payload);
       if(r.ok) totalSaved += r.saved||0;
     }
     localStorage.setItem(LS_SYNC_TS, new Date().toISOString());
@@ -2720,8 +2744,23 @@ async function syncProgressDown(){
     if(!r.ok){ toast('取得失敗: '+r.error); setGasStatus('err'); return; }
     const prog = loadProgress();
     const uid = state.currentUser.id;
+    const remoteProgress = r.progress||{};
+    Object.entries(remoteProgress).forEach(([deckId, deckData])=>{
+      if(deckData && deckData.cardFlags){
+        const remoteFlags = deckData.cardFlags;
+        const localFlags = loadCardFlags(uid, deckId);
+        saveCardFlags(uid, deckId, mergeRemoteCardFlags(localFlags, remoteFlags));
+        delete deckData.cardFlags;
+      }
+    });
+    if(r.cardFlags && typeof r.cardFlags === 'object'){
+      Object.entries(r.cardFlags).forEach(([deckId, remoteFlags])=>{
+        const localFlags = loadCardFlags(uid, deckId);
+        saveCardFlags(uid, deckId, mergeRemoteCardFlags(localFlags, remoteFlags));
+      });
+    }
     // マージ（クラウド優先）
-    prog[uid] = Object.assign(prog[uid]||{}, r.progress||{});
+    prog[uid] = Object.assign(prog[uid]||{}, remoteProgress);
     saveProgress(prog);
     setGasStatus('ok');
     renderDeckList();
@@ -2735,12 +2774,15 @@ async function autoSyncProgress(results, deckId){
   if(!state.gasUrl||!state.currentUser) return;
   const uid = state.currentUser.id;
   const sessionId = uid+'_'+deckId+'_'+Date.now();
+  const cardFlags = loadCardFlags(uid, deckId);
+  const payload = {
+    action:'saveProgress', userId:uid, deckId,
+    sessionId,
+    results: results.map(r=>({cardId:r.card.id, correct:r.correct}))
+  };
+  if(Object.keys(cardFlags).length > 0) payload.cardFlags = cardFlags;
   try{
-    await gasPost({
-      action:'saveProgress', userId:uid, deckId,
-      sessionId,
-      results: results.map(r=>({cardId:r.card.id, correct:r.correct}))
-    });
+    await gasPost(payload);
     setGasStatus('ok');
   }catch(e){ console.warn('autoSync failed:', e); }
 }
