@@ -2700,7 +2700,7 @@ async function syncProgressUp(){
       if(!results.length && !hasCardFlags) continue;
       const sessionId = uid+'_'+deckId+'_sync_'+Date.now();
       const payload = { action:'saveProgress', userId:uid, deckId, sessionId, results };
-      if(hasCardFlags) payload.cardFlags = cardFlags;
+      if(hasCardFlags) payload.cardFlags = JSON.stringify(cardFlags);
       const r = await gasPost(payload);
       if(r.ok) totalSaved += r.saved||0;
     }
@@ -2747,17 +2747,23 @@ async function syncProgressDown(){
     const remoteProgress = r.progress||{};
     Object.entries(remoteProgress).forEach(([deckId, deckData])=>{
       if(deckData && deckData.cardFlags){
-        const remoteFlags = deckData.cardFlags;
+        let remoteFlags = deckData.cardFlags;
+        if(typeof remoteFlags === 'string') remoteFlags = JSON.parse(remoteFlags);
         const localFlags = loadCardFlags(uid, deckId);
         saveCardFlags(uid, deckId, mergeRemoteCardFlags(localFlags, remoteFlags));
         delete deckData.cardFlags;
       }
     });
-    if(r.cardFlags && typeof r.cardFlags === 'object'){
-      Object.entries(r.cardFlags).forEach(([deckId, remoteFlags])=>{
-        const localFlags = loadCardFlags(uid, deckId);
-        saveCardFlags(uid, deckId, mergeRemoteCardFlags(localFlags, remoteFlags));
-      });
+    if(r.cardFlags){
+      let topLevelFlags = r.cardFlags;
+      if(typeof topLevelFlags === 'string') topLevelFlags = JSON.parse(topLevelFlags);
+      if(typeof topLevelFlags === 'object'){
+        Object.entries(topLevelFlags).forEach(([deckId, remoteFlags])=>{
+          if(typeof remoteFlags === 'string') remoteFlags = JSON.parse(remoteFlags);
+          const localFlags = loadCardFlags(uid, deckId);
+          saveCardFlags(uid, deckId, mergeRemoteCardFlags(localFlags, remoteFlags));
+        });
+      }
     }
     // マージ（クラウド優先）
     prog[uid] = Object.assign(prog[uid]||{}, remoteProgress);
@@ -2780,7 +2786,7 @@ async function autoSyncProgress(results, deckId){
     sessionId,
     results: results.map(r=>({cardId:r.card.id, correct:r.correct}))
   };
-  if(Object.keys(cardFlags).length > 0) payload.cardFlags = cardFlags;
+  if(Object.keys(cardFlags).length > 0) payload.cardFlags = JSON.stringify(cardFlags);
   try{
     await gasPost(payload);
     setGasStatus('ok');
