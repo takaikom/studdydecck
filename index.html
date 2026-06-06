@@ -3,6 +3,14 @@
 =======================================================
   StudyDeck 変更履歴
 =======================================================
+[v37] GASアップロードのバグ修正
+  ① gasGet / gasPost のシリアライズバグを修正
+     - 旧: gasPost が body 全体を JSON.stringify して _data に載せ直す → cardFlags が二重エスケープされてGASに届かない
+     - 旧: gasGet が配列/オブジェクトを String() でキャスト → results が "[object Object]..." になって壊れる
+     - 新: gasGet 内でオブジェクト・配列は自動的に JSON.stringify してURLエンコード
+     - 新: gasPost は gasGet のラッパーのみに簡略化（_data パラメータ廃止）
+     - syncProgressUp / autoSyncProgress の results も JSON.stringify してから送信するよう修正
+
 [v36] 成績アップロード・ダウンロードにカードの完了状況、日付、お気に入りを追加
   ① 成績アップロード・ダウンロードにカードの完了状況、日付、お気に入りも含める
      - デッキ全体のJSONに、各カードの状態（完了✓、完了日付、★お気に入り）を追加して保存
@@ -2699,7 +2707,7 @@ async function syncProgressUp(){
       const hasCardFlags = Object.keys(cardFlags).length > 0;
       if(!results.length && !hasCardFlags) continue;
       const sessionId = uid+'_'+deckId+'_sync_'+Date.now();
-      const payload = { action:'saveProgress', userId:uid, deckId, sessionId, results };
+      const payload = { action:'saveProgress', userId:uid, deckId, sessionId, results: JSON.stringify(results) };
       if(hasCardFlags) payload.cardFlags = JSON.stringify(cardFlags);
       const r = await gasPost(payload);
       if(r.ok) totalSaved += r.saved||0;
@@ -2784,7 +2792,7 @@ async function autoSyncProgress(results, deckId){
   const payload = {
     action:'saveProgress', userId:uid, deckId,
     sessionId,
-    results: results.map(r=>({cardId:r.card.id, correct:r.correct}))
+    results: JSON.stringify(results.map(r=>({cardId:r.card.id, correct:r.correct})))
   };
   if(Object.keys(cardFlags).length > 0) payload.cardFlags = JSON.stringify(cardFlags);
   try{
@@ -2798,7 +2806,11 @@ async function autoSyncProgress(results, deckId){
 // すべてGETパラメータで送ることで安定動作させる。
 async function gasGet(params){
   if(!state.gasUrl) throw new Error('GAS URL not set');
-  const qs = Object.entries(params).map(([k,v])=>k+'='+encodeURIComponent(String(v))).join('&');
+  // 値がオブジェクト・配列の場合はJSONシリアライズ、文字列はそのまま
+  const qs = Object.entries(params).map(([k,v])=>{
+    const s = (v !== null && typeof v === 'object') ? JSON.stringify(v) : String(v);
+    return k+'='+encodeURIComponent(s);
+  }).join('&');
   const url = state.gasUrl + (state.gasUrl.includes('?')?'&':'?') + qs;
   const res = await fetch(url, {redirect:'follow'});
   if(!res.ok) throw new Error('HTTP '+res.status);
@@ -2808,8 +2820,7 @@ async function gasGet(params){
 }
 // POST相当の書き込みもGETパラメータで送る（GASはdoGetで受けてOK）
 async function gasPost(body){
-  // bodyをJSONシリアライズしてdataパラメータに載せる
-  return gasGet({...body, _data: JSON.stringify(body)});
+  return gasGet(body);
 }
 
 // ══════════════════════════════════════════════════════
