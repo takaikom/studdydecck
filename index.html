@@ -3760,7 +3760,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
 // ─── そろばん（SVGベース本格版）───
 (function(){
   // ── レイアウト定数 ──
-  const COLS      = 9;
+  const COLS      = 7;
   const CW        = 36;   // 列幅
   const GAP       = 3;    // 列間隔
   const ROD_W     = 4;    // 軸棒幅
@@ -3784,7 +3784,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
   const BEAM_Y    = FRAME_T + UPPER_H;
 
   // 定位点列（右から3番目=col 6, 右から6番目=col 3）
-  const TEII      = new Set([6, 3]);
+  const TEII      = new Set([4, 1]);
 
   // ── ミニプレビュー定数（1/3スケール相当） ──
   const MINI_SCALE = 0.20;
@@ -3876,7 +3876,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
       }
 
       // 桁ラベル
-      const labels=['','十','百','千','万','十万','百万','千万','億'];
+      const labels=['','十','百','千','万','十万','百万'];
       const t = el('text',{x:cx,y:TOTAL_H-2,'text-anchor':'middle','font-size':'8',fill:C.text,'font-family':'Hiragino Sans,sans-serif'},svgEl);
       t.textContent = labels[COLS-1-c]||'';
 
