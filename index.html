@@ -3760,7 +3760,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
 // ─── そろばん（SVGベース本格版）───
 (function(){
   // ── レイアウト定数 ──
-  const COLS      = 7;
+  const COLS      = 8;
   const CW        = 36;   // 列幅
   const GAP       = 3;    // 列間隔
   const ROD_W     = 4;    // 軸棒幅
@@ -3784,7 +3784,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
   const BEAM_Y    = FRAME_T + UPPER_H;
 
   // 定位点列（右から3番目=col 6, 右から6番目=col 3）
-  const TEII      = new Set([4, 1]);
+  const TEII      = new Set([5, 2]);
 
   // ── ミニプレビュー定数（1/3スケール相当） ──
   const MINI_SCALE = 0.20;
@@ -3872,11 +3872,11 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
 
       // 定位点
       if(TEII.has(c)){
-        el('circle',{cx,cy:BEAM_Y+BEAM_H+5,r:3.5,fill:C.teii},svgEl);
+        el('circle',{cx,cy:BEAM_Y+BEAM_H/2,r:3.5,fill:C.teii},svgEl);
       }
 
       // 桁ラベル
-      const labels=['','十','百','千','万','十万','百万'];
+      const labels=['一','十','百','千','万','十万','百万','千万'];
       const t = el('text',{x:cx,y:TOTAL_H-2,'text-anchor':'middle','font-size':'8',fill:C.text,'font-family':'Hiragino Sans,sans-serif'},svgEl);
       t.textContent = labels[COLS-1-c]||'';
 
@@ -3916,7 +3916,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
     if(!svg) return;
     const wrap = document.getElementById('soroban-frame-wrap');
     const avail = wrap ? wrap.clientWidth : window.innerWidth - 32;
-    const scale = avail >= TOTAL_W ? 1 : avail / TOTAL_W;
+    const scale = avail / TOTAL_W;
     drawSoroban(svg, scale, true);
     svg.style.margin = '0 auto';
     // イベント付け替え
