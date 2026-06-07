@@ -3,6 +3,17 @@
 =======================================================
   StudyDeck 変更履歴
 =======================================================
+[v38] 算数トレーナー統合
+  ① タブバーに「🧮 算数」タブを追加（4つ目）
+  ② 算数トレーナー（math_flash_trainer_v4）をStudyDeckに組み込み
+     - 全CSS・JSを名前空間プレフィックス mt_ でStudyDeckに統合
+     - テーマはStudyDeckのdark/lightテーマを自動継承
+     - ロック・ダークモードボタン等の重複UIを除去しStudyDeck側に統合
+  ③ GAS連携は「設定データのみ」を同期
+     - 算数トレーナーの cfg（問題数・桁数・演算子等）をlocalStorageに保存
+     - saveProgress/getProgress時に mathTrainerCfg フィールドとして送受信
+     - 具体的な問題・成績の詳細データはGASに送信しない
+
 [v37] GASアップロードのバグ修正
   ① gasGet / gasPost のシリアライズバグを修正
      - 旧: gasPost が body 全体を JSON.stringify して _data に載せ直す → cardFlags が二重エスケープされてGASに届かない
@@ -420,6 +431,102 @@ input[type=file]{display:none}
 .online-deck-name{font-size:14px;font-weight:600}
 .online-deck-meta{font-size:11px;color:var(--text2);margin-top:2px}
 .dl-btn{background:var(--accent3);color:#000;border:none;padding:6px 12px;border-radius:var(--radius-xs);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0}
+
+/* ══════════════════════════════════════════════════════
+   算数トレーナー (mt_) スタイル
+   ══════════════════════════════════════════════════════ */
+#tab-math{flex:1;overflow:hidden;display:none;flex-direction:column}
+#tab-math .mt-main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.mt-tabs{display:flex;gap:0;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:14px}
+.mt-tab{flex:1;padding:7px;text-align:center;border-radius:var(--radius-xs);cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);transition:var(--trans);border:none;background:none;font-family:inherit}
+.mt-tab.active{background:var(--surface);color:var(--accent3);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.mt-card{background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+html.light .mt-card{background:#fff;border-color:#dde0ea}
+.mt-setting-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+html.light .mt-setting-row{border-bottom-color:#dde0ea}
+.mt-setting-row:last-child{border-bottom:none}
+.mt-setting-label{font-size:14px;color:var(--text);font-weight:600}
+.mt-setting-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.mt-setting-ctrl{display:flex;align-items:center;gap:6px}
+.mt-num-wrap{display:inline-flex;align-items:center;border:1.5px solid var(--surface3);border-radius:var(--radius-xs);overflow:hidden;background:var(--surface2)}
+.mt-num-wrap input[type=number]{border:none;border-radius:0;background:transparent;outline:none;width:64px;padding:5px 8px;font-size:14px;color:var(--text);text-align:center;-moz-appearance:textfield;appearance:textfield;font-family:inherit}
+.mt-num-wrap input[type=number]::-webkit-inner-spin-button,.mt-num-wrap input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.mt-num-wrap input[type=number]:focus{box-shadow:inset 0 0 0 2px var(--accent3);outline:none}
+.mt-spin-btns{display:flex;flex-direction:column;border-left:1.5px solid var(--surface3)}
+.mt-spin-btn{display:flex;align-items:center;justify-content:center;width:24px;height:16px;background:var(--surface2);border:none;cursor:pointer;font-size:9px;color:var(--text2);transition:var(--trans);padding:0;line-height:1;user-select:none;-webkit-user-select:none;font-family:inherit}
+.mt-spin-btn:first-child{border-bottom:1.5px solid var(--surface3)}
+.mt-spin-btn:hover{background:var(--surface3);color:var(--accent3)}
+.mt-spin-btn:active{background:var(--accent3);color:#000}
+.mt-toggle-group{display:flex;gap:4px;flex-wrap:wrap}
+.mt-toggle-btn{padding:4px 10px;border:1.5px solid var(--surface3);border-radius:20px;font-size:12px;cursor:pointer;background:var(--surface2);color:var(--text2);transition:var(--trans);user-select:none;font-family:inherit}
+.mt-toggle-btn.on{background:var(--accent3);color:#000;border-color:var(--accent3)}
+.mt-btn-start{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:700;cursor:pointer;transition:var(--trans);font-family:inherit;margin-top:4px}
+.mt-btn-start:active{opacity:.85}
+.mt-btn-start:disabled{opacity:.4;cursor:not-allowed}
+/* クイズ画面 */
+.mt-quiz-wrap{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.mt-quiz-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:var(--text2)}
+.mt-prog-bar{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.mt-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent3),var(--blue));border-radius:2px;transition:width .3s}
+.mt-flashcard{background:var(--surface);border:2px solid var(--surface3);border-radius:var(--radius);min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;transition:var(--trans);text-align:center;position:relative;margin-bottom:12px}
+.mt-flashcard.revealed{border-color:var(--green)}
+.mt-q-text{font-size:clamp(20px,5vw,30px);font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.3}
+.mt-frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.85em;margin:0 3px}
+.mt-frac-num{border-bottom:2px solid currentColor;padding:0 4px;line-height:1.2}
+.mt-frac-den{padding:0 4px;line-height:1.2}
+.mt-time-badge{position:absolute;top:8px;right:10px;font-size:12px;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:20px}
+.mt-ans-wrap{margin-top:14px;width:100%;display:flex;flex-direction:column;align-items:center;gap:8px}
+.mt-ans-row{display:flex;align-items:center;gap:8px}
+.mt-ans-input{font-size:20px;padding:8px 14px;width:150px;border:2px solid var(--surface3);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);text-align:center;outline:none;transition:var(--trans);font-family:inherit}
+.mt-ans-input:focus{border-color:var(--accent3)}
+.mt-ans-input.correct{border-color:var(--green);background:rgba(46,204,113,.08)}
+.mt-ans-input.wrong{border-color:var(--red);background:rgba(231,76,60,.08)}
+.mt-btn-judge{padding:8px 18px;background:var(--accent3);color:#000;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:var(--trans);font-family:inherit}
+.mt-btn-judge:active{opacity:.8}
+.mt-btn-judge:disabled{opacity:.4;cursor:not-allowed}
+.mt-judge-result{font-size:15px;font-weight:600;padding:5px 14px;border-radius:20px;display:none}
+.mt-judge-result.correct{display:inline-block;background:rgba(46,204,113,.15);color:var(--green)}
+.mt-judge-result.wrong{display:inline-block;background:rgba(231,76,60,.15);color:var(--red)}
+.mt-correct-reveal{font-size:13px;color:var(--text3);margin-top:4px;display:none}
+.mt-quiz-btns{display:flex;gap:8px;margin-top:4px}
+.mt-btn-next{flex:1;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:var(--trans);font-family:inherit}
+.mt-btn-next:active{opacity:.85}
+.mt-btn-quit{padding:12px 16px;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-sm);font-size:14px;color:var(--text2);cursor:pointer;font-family:inherit;transition:var(--trans)}
+.mt-btn-quit:active{opacity:.7}
+/* 結果画面 */
+.mt-result-hero{text-align:center;padding:24px 16px 16px}
+.mt-result-emoji{font-size:40px;margin-bottom:4px}
+.mt-result-title{font-size:18px;font-weight:700;color:var(--accent3);margin-bottom:10px}
+.mt-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.mt-stat-card{background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center}
+.mt-stat-num{font-size:20px;font-weight:800;color:var(--accent3)}
+.mt-stat-lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.mt-cfg-badges{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:8px}
+.mt-cfg-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--surface2);border:1.5px solid var(--surface3);color:var(--text2)}
+.mt-cfg-badge.hl{background:rgba(78,205,196,.12);border-color:var(--accent3);color:var(--accent3)}
+/* 成績タブ */
+.mt-rec-card{background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden}
+html.light .mt-rec-card{background:#fff;border-color:#dde0ea}
+.mt-rec-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;gap:8px;user-select:none;-webkit-user-select:none}
+.mt-rec-header:active{background:var(--surface2)}
+.mt-rec-left{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.mt-rec-date{font-size:11px;color:var(--text3)}
+.mt-rec-score{font-size:14px;font-weight:600;color:var(--accent3)}
+.mt-rec-chevron{font-size:12px;color:var(--text3);transition:transform .2s;flex-shrink:0}
+.mt-rec-chevron.open{transform:rotate(180deg)}
+.mt-rec-body{display:none;border-top:1px solid rgba(255,255,255,.06);padding:10px 14px}
+html.light .mt-rec-body{border-top-color:#dde0ea}
+.mt-rec-body.open{display:block}
+.mt-detail-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.mt-detail-table th{padding:4px 6px;color:var(--text3);font-weight:600;border-bottom:1px solid rgba(255,255,255,.06);text-align:left}
+html.light .mt-detail-table th{border-bottom-color:#dde0ea}
+.mt-detail-table td{padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text)}
+html.light .mt-detail-table td{border-bottom-color:#eee}
+.mt-detail-table tr:last-child td{border-bottom:none}
+.mt-mark-ok{color:var(--green);font-weight:600}
+.mt-mark-ng{color:var(--red);font-weight:600}
+/* GAS設定バナー */
+.mt-gas-banner{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent3);line-height:1.6}
 </style>
 </head>
 <body>
@@ -529,12 +636,181 @@ input[type=file]{display:none}
         </div>
         <div class="section-title">アプリ情報</div>
         <div class="card">
-          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.5<br>GAS連携対応 / オフライン対応 PWA</p>
+          <p style="font-size:13px;color:var(--text2)">StudyDeck v2.6<br>GAS連携対応 / オフライン対応 PWA</p>
         </div>
       </div>
     </div>
-  </div>
-</div>
+
+    <!-- タブ: 算数トレーナー -->
+    <div id="tab-math" style="flex:1;overflow:hidden;display:none;flex-direction:column">
+      <div class="mt-main" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
+
+        <!-- 算数内タブ -->
+        <div class="mt-tabs">
+          <button class="mt-tab active" id="mt-tab-settings" onclick="mt_showTab('settings')">⚙️ 設定</button>
+          <button class="mt-tab" id="mt-tab-quiz" onclick="mt_showTab('quiz')">📝 問題</button>
+          <button class="mt-tab" id="mt-tab-records" onclick="mt_showTab('records')">📊 成績</button>
+        </div>
+
+        <!-- 設定ビュー -->
+        <div id="mt-view-settings">
+          <div class="mt-gas-banner" id="mt-gas-banner" style="display:none">
+            ☁️ GAS連携中 — 設定は自動保存・同期されます
+          </div>
+          <div class="mt-card">
+            <div class="mt-setting-row">
+              <div>
+                <div class="mt-setting-label">問題数</div>
+                <div class="mt-setting-sub">1回のセッション問題数</div>
+              </div>
+              <div class="mt-setting-ctrl">
+                <div class="mt-num-wrap">
+                  <input type="number" id="mt-cfg-count" min="1" max="100" value="10" style="width:72px">
+                  <div class="mt-spin-btns">
+                    <button class="mt-spin-btn" onclick="mt_spinInput('mt-cfg-count',1)">▲</button>
+                    <button class="mt-spin-btn" onclick="mt_spinInput('mt-cfg-count',-1)">▼</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-setting-row">
+              <div>
+                <div class="mt-setting-label">整数の桁数（最大）</div>
+                <div class="mt-setting-sub">整数部分の最大桁数</div>
+              </div>
+              <div class="mt-setting-ctrl">
+                <div class="mt-num-wrap">
+                  <input type="number" id="mt-cfg-digits" min="1" max="6" value="2">
+                  <div class="mt-spin-btns">
+                    <button class="mt-spin-btn" onclick="mt_spinInput('mt-cfg-digits',1)">▲</button>
+                    <button class="mt-spin-btn" onclick="mt_spinInput('mt-cfg-digits',-1)">▼</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-setting-row">
+              <div>
+                <div class="mt-setting-label">小数点以下の桁数（最大）</div>
+                <div class="mt-setting-sub">0 = 小数なし</div>
+              </div>
+              <div class="mt-setting-ctrl">
+                <div class="mt-num-wrap">
+                  <input type="number" id="mt-cfg-dec" min="0" max="4" value="1">
+                  <div class="mt-spin-btns">
+                    <button class="mt-spin-btn" onclick="mt_spinInput('mt-cfg-dec',1)">▲</button>
+                    <button class="mt-spin-btn" onclick="mt_spinInput('mt-cfg-dec',-1)">▼</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-setting-row">
+              <div><div class="mt-setting-label">分数を含む</div></div>
+              <div class="mt-setting-ctrl">
+                <div class="mt-toggle-group">
+                  <button class="mt-toggle-btn" id="mt-tog-frac-y" onclick="mt_toggleFrac('y')">含む</button>
+                  <button class="mt-toggle-btn on" id="mt-tog-frac-n" onclick="mt_toggleFrac('n')">含まない</button>
+                </div>
+              </div>
+            </div>
+            <div class="mt-setting-row">
+              <div>
+                <div class="mt-setting-label">演算子</div>
+                <div class="mt-setting-sub">使用する算術記号を選択</div>
+              </div>
+              <div class="mt-setting-ctrl">
+                <div class="mt-toggle-group">
+                  <button class="mt-toggle-btn on" id="mt-tog-plus"  onclick="mt_toggleOp('plus')">＋</button>
+                  <button class="mt-toggle-btn on" id="mt-tog-minus" onclick="mt_toggleOp('minus')">－</button>
+                  <button class="mt-toggle-btn on" id="mt-tog-times" onclick="mt_toggleOp('times')">×</button>
+                  <button class="mt-toggle-btn on" id="mt-tog-div"   onclick="mt_toggleOp('div')">÷</button>
+                </div>
+              </div>
+            </div>
+            <div class="mt-setting-row">
+              <div>
+                <div class="mt-setting-label">1問あたりの演算子数</div>
+                <div class="mt-setting-sub">指定なし＝ランダム</div>
+              </div>
+              <div class="mt-setting-ctrl">
+                <div class="mt-toggle-group">
+                  <button class="mt-toggle-btn on" id="mt-opn-0" onclick="mt_setOpCount(0)">ランダム</button>
+                  <button class="mt-toggle-btn" id="mt-opn-1" onclick="mt_setOpCount(1)">1</button>
+                  <button class="mt-toggle-btn" id="mt-opn-2" onclick="mt_setOpCount(2)">2</button>
+                  <button class="mt-toggle-btn" id="mt-opn-3" onclick="mt_setOpCount(3)">3</button>
+                  <button class="mt-toggle-btn" id="mt-opn-4" onclick="mt_setOpCount(4)">4</button>
+                  <button class="mt-toggle-btn" id="mt-opn-5" onclick="mt_setOpCount(5)">5</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="mt-btn-start" id="mt-startBtn" onclick="mt_startQuiz()">セッションを開始</button>
+        </div>
+
+        <!-- クイズビュー -->
+        <div id="mt-view-quiz" style="display:none">
+          <div class="mt-quiz-info">
+            <span id="mt-q-counter">1 / 10</span>
+            <span id="mt-q-session-time">⏱ 0:00</span>
+          </div>
+          <div class="mt-prog-bar"><div class="mt-prog-fill" id="mt-q-progress" style="width:0%"></div></div>
+          <div class="mt-flashcard" id="mt-flashcard">
+            <div class="mt-time-badge" id="mt-q-time">0.0秒</div>
+            <div class="mt-q-text" id="mt-q-text">準備中…</div>
+            <div class="mt-ans-wrap">
+              <div class="mt-ans-row">
+                <input type="text" id="mt-ans-input" class="mt-ans-input" placeholder="答えを入力" inputmode="decimal" autocomplete="off">
+                <button class="mt-btn-judge" id="mt-judgeBtn" onclick="mt_judgeAnswer()">確認</button>
+              </div>
+              <div class="mt-judge-result" id="mt-judge-result"></div>
+              <div class="mt-correct-reveal" id="mt-correct-reveal"></div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:8px;display:none" id="mt-reveal-hint">次の問題へ進むか、終了できます</div>
+          <div class="mt-quiz-btns">
+            <button class="mt-btn-quit" onclick="mt_quitQuiz()">終了</button>
+            <button class="mt-btn-next" id="mt-nextBtn" onclick="mt_nextQuestion()" disabled>次の問題 →</button>
+          </div>
+        </div>
+
+        <!-- 結果ビュー -->
+        <div id="mt-view-result" style="display:none">
+          <div class="mt-card">
+            <div class="mt-result-hero">
+              <div class="mt-result-emoji" id="mt-res-emoji">🎉</div>
+              <div class="mt-result-title">セッション完了！</div>
+              <div class="mt-cfg-badges" id="mt-res-cfg-badges" style="justify-content:flex-start"></div>
+            </div>
+            <div class="mt-stat-grid">
+              <div class="mt-stat-card"><div class="mt-stat-num" id="mt-res-total">—</div><div class="mt-stat-lbl">問題数</div></div>
+              <div class="mt-stat-card"><div class="mt-stat-num" id="mt-res-correct">—</div><div class="mt-stat-lbl">正解数</div></div>
+              <div class="mt-stat-card"><div class="mt-stat-num" id="mt-res-rate">—</div><div class="mt-stat-lbl">正答率</div></div>
+              <div class="mt-stat-card"><div class="mt-stat-num" id="mt-res-avg">—</div><div class="mt-stat-lbl">平均時間</div></div>
+            </div>
+          </div>
+          <div class="mt-card">
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">📋 問題一覧</div>
+            <table class="mt-detail-table">
+              <thead><tr><th>#</th><th>問題</th><th>あなたの答え</th><th>正解</th><th>時間</th></tr></thead>
+              <tbody id="mt-result-tbody"></tbody>
+            </table>
+          </div>
+          <button class="mt-btn-start" onclick="mt_backToSettings()" style="margin-top:4px">⚙️ 設定に戻る</button>
+        </div>
+
+        <!-- 成績ビュー -->
+        <div id="mt-view-records" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:14px;font-weight:700;color:var(--text)">過去の成績</div>
+            <button onclick="mt_clearRecords()" style="background:rgba(231,76,60,.15);border:none;color:var(--red);font-size:12px;font-weight:700;padding:5px 10px;border-radius:var(--radius-xs);cursor:pointer;font-family:inherit">🗑 全消去</button>
+          </div>
+          <div id="mt-records-list"><div style="text-align:center;padding:32px;color:var(--text3);font-size:14px">まだ成績がありません</div></div>
+        </div>
+
+      </div><!-- /mt-main -->
+    </div><!-- /tab-math -->
+
+  </div><!-- /home-tab-content -->
+</div><!-- /s-home -->
 
 <!-- ══ S2: デッキ詳細 ══ -->
 <div class="screen" id="s-deck">
@@ -912,6 +1188,9 @@ input[type=file]{display:none}
   <button class="tab-item" id="tab-btn-stats" onclick="switchTab('stats')">
     <span class="tab-icon">📊</span>統計
   </button>
+  <button class="tab-item" id="tab-btn-math" onclick="switchTab('math')">
+    <span class="tab-icon">🧮</span>算数
+  </button>
   <button class="tab-item" id="tab-btn-settings" onclick="switchTab('settings')">
     <span class="tab-icon">⚙️</span>設定
   </button>
@@ -1031,6 +1310,9 @@ function selectAndGo(uid){
   state.currentUser = state.users.find(u=>u.id===uid);
   document.querySelectorAll('.user-tile').forEach(t=>t.classList.remove('selected'));
   document.querySelector(`[data-uid="${uid}"]`)?.classList.add('selected');
+  // 算数トレーナー設定をユーザーごとにリロード
+  const savedCfg=mt_loadCfg();
+  if(savedCfg){ mt_cfg=Object.assign(mt_cfg,savedCfg); mt_applySettingsToUI(); }
   selectUser();
 }
 
@@ -2162,7 +2444,7 @@ function switchTab(tab){
   if(!document.getElementById('s-home').classList.contains('active')){
     showScreen('s-home');
   }
-  ['decks','stats','settings'].forEach(t=>{
+  ['decks','stats','math','settings'].forEach(t=>{
     const panel=document.getElementById('tab-'+t);
     const btn=document.getElementById('tab-btn-'+t);
     panel.style.display=t===tab?'flex':'none';
@@ -2172,6 +2454,13 @@ function switchTab(tab){
   if(tab==='settings'){
     const ui=document.getElementById('gas-url-input');
     if(ui) ui.value=state.gasUrl||'';
+  }
+  if(tab==='math'){
+    // GASバナー表示切替
+    const banner=document.getElementById('mt-gas-banner');
+    if(banner) banner.style.display=state.gasUrl?'block':'none';
+    // 設定をUIに反映
+    mt_applySettingsToUI();
   }
 }
 
@@ -2709,6 +2998,8 @@ async function syncProgressUp(){
       const sessionId = uid+'_'+deckId+'_sync_'+Date.now();
       const payload = { action:'saveProgress', userId:uid, deckId, sessionId, results: JSON.stringify(results) };
       if(hasCardFlags) payload.cardFlags = JSON.stringify(cardFlags);
+      // 算数トレーナーの設定をアップロード（最初のデッキで1回だけ）
+      if(totalSaved === 0) payload.mathTrainerCfg = JSON.stringify(mt_getCfgForGas());
       const r = await gasPost(payload);
       if(r.ok) totalSaved += r.saved||0;
     }
@@ -2776,6 +3067,8 @@ async function syncProgressDown(){
     // マージ（クラウド優先）
     prog[uid] = Object.assign(prog[uid]||{}, remoteProgress);
     saveProgress(prog);
+    // 算数トレーナー設定をダウンロード反映
+    if(r.mathTrainerCfg) mt_applyGasCfg(typeof r.mathTrainerCfg==='string'?JSON.parse(r.mathTrainerCfg):r.mathTrainerCfg);
     setGasStatus('ok');
     renderDeckList();
     if(state.currentDeck) renderDeckDetail();
@@ -2952,7 +3245,472 @@ function openHintLink(url){
   document.body.removeChild(a);
 }
 
+// ══════════════════════════════════════════════════════
+// 算数トレーナー (mt_) — StudyDeck 統合版
+// ══════════════════════════════════════════════════════
+const MT_LS_RECORDS = 'mathTrainer_records';
+const MT_LS_CFG     = 'mathTrainer_cfg';
+
+let mt_cfg = {
+  count: 10, digits: 2, dec: 1,
+  frac: false,
+  ops: ['plus','minus','times','div'],
+  opCount: 0
+};
+let mt_session   = null;
+let mt_records   = [];
+let mt_timerInt  = null;
+let mt_sessionInt= null;
+let mt_qStart    = 0;
+
+// ─── localStorage 永続化 ───
+function mt_saveCfg(){
+  localStorage.setItem(MT_LS_CFG, JSON.stringify(mt_cfg));
+  // GAS連携中であればユーザーIDと紐づけて保存
+  if(state.gasUrl && state.currentUser){
+    const key='mathTrainerCfg_'+state.currentUser.id;
+    localStorage.setItem(key, JSON.stringify(mt_cfg));
+  }
+}
+function mt_loadCfg(){
+  // ユーザーIDつきキーを優先
+  if(state.currentUser){
+    const key='mathTrainerCfg_'+state.currentUser.id;
+    try{ const d=JSON.parse(localStorage.getItem(key)); if(d) return d; }catch{}
+  }
+  try{ const d=JSON.parse(localStorage.getItem(MT_LS_CFG)); if(d) return d; }catch{}
+  return null;
+}
+function mt_saveRecords(){
+  try{ localStorage.setItem(MT_LS_RECORDS, JSON.stringify(mt_records)); }catch{}
+}
+function mt_init(){
+  try{ mt_records = JSON.parse(localStorage.getItem(MT_LS_RECORDS)||'[]'); }catch{ mt_records=[]; }
+  const saved = mt_loadCfg();
+  if(saved){
+    mt_cfg = Object.assign(mt_cfg, saved);
+    mt_applySettingsToUI();
+  }
+}
+
+// ─── 設定をUIに反映 ───
+function mt_applySettingsToUI(){
+  const c=document.getElementById('mt-cfg-count');
+  const d=document.getElementById('mt-cfg-digits');
+  const dc=document.getElementById('mt-cfg-dec');
+  if(c) c.value=mt_cfg.count;
+  if(d) d.value=mt_cfg.digits;
+  if(dc) dc.value=mt_cfg.dec;
+  document.getElementById('mt-tog-frac-y')?.classList.toggle('on', mt_cfg.frac);
+  document.getElementById('mt-tog-frac-n')?.classList.toggle('on', !mt_cfg.frac);
+  ['plus','minus','times','div'].forEach(op=>{
+    document.getElementById('mt-tog-'+op)?.classList.toggle('on', mt_cfg.ops.includes(op));
+  });
+  for(let i=0;i<=5;i++){
+    document.getElementById('mt-opn-'+i)?.classList.toggle('on', mt_cfg.opCount===i);
+  }
+}
+
+// ─── タブ切替 ───
+function mt_showTab(name){
+  ['settings','quiz','records'].forEach(t=>{
+    document.getElementById('mt-view-'+t).style.display=t===name?'block':'none';
+    document.getElementById('mt-tab-'+t)?.classList.toggle('active',t===name);
+  });
+  document.getElementById('mt-view-result').style.display='none';
+  if(name==='records') mt_renderRecords();
+}
+
+// ─── スピンボタン ───
+function mt_spinInput(id, delta){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const min=parseInt(el.min??'-Infinity'), max=parseInt(el.max??'Infinity');
+  let v=parseInt(el.value)||0;
+  el.value=Math.min(max,Math.max(min,v+delta));
+}
+
+// ─── 設定トグル ───
+function mt_toggleFrac(v){
+  mt_cfg.frac=v==='y';
+  document.getElementById('mt-tog-frac-y')?.classList.toggle('on',mt_cfg.frac);
+  document.getElementById('mt-tog-frac-n')?.classList.toggle('on',!mt_cfg.frac);
+  mt_saveCfg();
+}
+function mt_toggleOp(op){
+  const idx=mt_cfg.ops.indexOf(op);
+  if(idx>=0){ if(mt_cfg.ops.length<=1) return; mt_cfg.ops.splice(idx,1); }
+  else mt_cfg.ops.push(op);
+  document.getElementById('mt-tog-'+op)?.classList.toggle('on',mt_cfg.ops.includes(op));
+  mt_saveCfg();
+}
+function mt_setOpCount(n){
+  mt_cfg.opCount=n;
+  for(let i=0;i<=5;i++) document.getElementById('mt-opn-'+i)?.classList.remove('on');
+  document.getElementById('mt-opn-'+n)?.classList.add('on');
+  mt_saveCfg();
+}
+
+// ─── 数値生成 ───
+function mt_randInt(digits){ return Math.floor(Math.random()*(Math.pow(10,digits)-1))+1; }
+function mt_randDec(digits,dec){
+  const base=mt_randInt(digits);
+  if(dec===0) return base;
+  const places=Math.floor(Math.random()*dec)+1;
+  const factor=Math.pow(10,places);
+  return Math.round((base+Math.random())*factor)/factor;
+}
+function mt_randFrac(){
+  const den=Math.floor(Math.random()*11)+2, num=Math.floor(Math.random()*(den-1))+1;
+  return {type:'frac',num,den};
+}
+function mt_isFrac(v){ return typeof v==='object'&&v.type==='frac'; }
+function mt_randNum(){
+  if(mt_cfg.frac&&Math.random()<0.35) return mt_randFrac();
+  return mt_randDec(mt_cfg.digits,mt_cfg.dec);
+}
+
+// ─── 分数演算 ───
+function mt_gcd(a,b){ return b===0?Math.abs(a):mt_gcd(b,a%b); }
+function mt_lcm(a,b){ return Math.abs(a)/mt_gcd(Math.abs(a),Math.abs(b))*Math.abs(b); }
+function mt_toFrac(v){
+  if(typeof v==='object') return {num:v.num,den:v.den};
+  const s=v.toString(), dec=s.indexOf('.');
+  if(dec<0) return {num:v,den:1};
+  const places=s.length-dec-1, den=Math.pow(10,places), num=Math.round(v*den);
+  const g=mt_gcd(Math.abs(num),den); return {num:num/g,den:den/g};
+}
+function mt_simplify(num,den){
+  if(den<0){num=-num;den=-den;} const g=mt_gcd(Math.abs(num),Math.abs(den));
+  return {num:num/g,den:den/g};
+}
+function mt_fracCalc(a,b,op){
+  const fa=mt_toFrac(a),fb=mt_toFrac(b); let num,den;
+  if(op==='plus') { den=mt_lcm(fa.den,fb.den); num=fa.num*(den/fa.den)+fb.num*(den/fb.den); }
+  if(op==='minus'){ den=mt_lcm(fa.den,fb.den); num=fa.num*(den/fa.den)-fb.num*(den/fb.den); }
+  if(op==='times'){ num=fa.num*fb.num; den=fa.den*fb.den; }
+  if(op==='div')  { num=fa.num*fb.den; den=fa.den*fb.num; }
+  if(!den) return {type:'frac',num:0,den:1};
+  const s=mt_simplify(num,den);
+  if(s.den===1) return s.num;
+  return {type:'frac',num:s.num,den:s.den};
+}
+
+// ─── HTML表示変換 ───
+const MT_OP_SYMBOLS={plus:'＋',minus:'－',times:'×',div:'÷'};
+function mt_numToHtml(v){
+  if(mt_isFrac(v)){
+    if(Math.abs(v.num)>=v.den){
+      const whole=Math.trunc(v.num/v.den),rem=Math.abs(v.num%v.den);
+      if(rem===0) return `${whole}`;
+      return `${whole}<span class="mt-frac"><span class="mt-frac-num">${rem}</span><span class="mt-frac-den">${v.den}</span></span>`;
+    }
+    return `<span class="mt-frac"><span class="mt-frac-num">${v.num}</span><span class="mt-frac-den">${v.den}</span></span>`;
+  }
+  return parseFloat((v.toFixed?v.toFixed(8):v)).toString();
+}
+function mt_numToText(v){
+  if(mt_isFrac(v)){
+    if(Math.abs(v.num)>=v.den){const w=Math.trunc(v.num/v.den),r=Math.abs(v.num%v.den); if(r===0)return`${w}`; return`${w} ${r}/${v.den}`;}
+    return`${v.num}/${v.den}`;
+  }
+  return parseFloat((v.toFixed?v.toFixed(8):v)).toString();
+}
+
+// ─── 問題生成 ───
+function mt_generateQuestion(){
+  let opCount=mt_cfg.opCount===0?(Math.floor(Math.random()*3)+1):mt_cfg.opCount;
+  opCount=Math.max(1,Math.min(5,opCount));
+  const nums=[mt_randNum()], ops=[];
+  for(let i=0;i<opCount;i++){
+    const op=mt_cfg.ops[Math.floor(Math.random()*mt_cfg.ops.length)];
+    ops.push(op);
+    let n=mt_randNum();
+    if(op==='div') while((typeof n==='number'&&n===0)||(mt_isFrac(n)&&n.num===0)) n=mt_randNum();
+    nums.push(n);
+  }
+  const hasFrac=nums.some(mt_isFrac);
+  const parts=[],textParts=[];
+  nums.forEach((n,i)=>{
+    parts.push(mt_numToHtml(n)); textParts.push(mt_numToText(n));
+    if(i<ops.length){
+      parts.push(`<span style="color:var(--accent3);margin:0 6px">${MT_OP_SYMBOLS[ops[i]]}</span>`);
+      textParts.push(MT_OP_SYMBOLS[ops[i]]);
+    }
+  });
+  let result=nums[0];
+  for(let i=0;i<ops.length;i++){
+    const b=nums[i+1], needFrac=mt_isFrac(result)||mt_isFrac(b);
+    const hasDec=(!mt_isFrac(result)&&result.toString().includes('.'))||(!mt_isFrac(b)&&b.toString().includes('.'));
+    if(needFrac||hasDec){ result=mt_fracCalc(result,b,ops[i]); }
+    else{
+      const rv=result,bv=b;
+      if(ops[i]==='plus') result=rv+bv;
+      if(ops[i]==='minus') result=rv-bv;
+      if(ops[i]==='times') result=rv*bv;
+      if(ops[i]==='div'){ if(rv%bv===0) result=rv/bv; else result=mt_fracCalc(rv,bv,ops[i]); }
+    }
+  }
+  let ansHtml,ansText;
+  if(hasFrac){ ansHtml=mt_numToHtml(result); ansText=mt_numToText(result); }
+  else{
+    if(mt_isFrac(result)){ const d=result.num/result.den; ansHtml=parseFloat(d.toFixed(8)).toString(); ansText=ansHtml; }
+    else{ ansHtml=parseFloat(result.toFixed(8)).toString(); ansText=ansHtml; }
+  }
+  return {html:parts.join(''),text:textParts.join(' '),answer:result,answerHtml:ansHtml,answerText:ansText,ops};
+}
+
+// ─── 正誤判定 ───
+function mt_checkAnswer(userStr,q){
+  if(userStr==='') return false;
+  let userNum=null;
+  const mix=userStr.match(/^(-?\d+)\s+(\d+)\/(\d+)$/);
+  if(mix){ const w=parseInt(mix[1]),n=parseInt(mix[2]),d=parseInt(mix[3]); userNum=w+(w>=0?n/d:-n/d); }
+  const fr=!mix&&userStr.match(/^(-?\d+)\/(\d+)$/);
+  if(fr) userNum=parseInt(fr[1])/parseInt(fr[2]);
+  if(userNum===null){ const p=parseFloat(userStr.replace(',','.')); if(isNaN(p)) return false; userNum=p; }
+  let correct;
+  if(mt_isFrac(q.answer)) correct=q.answer.num/q.answer.den;
+  else correct=parseFloat(parseFloat(q.answer).toFixed(8));
+  return Math.abs(userNum-correct)<1e-6;
+}
+
+// ─── セッション ───
+function mt_startQuiz(){
+  mt_cfg.count =Math.max(1,Math.min(100,parseInt(document.getElementById('mt-cfg-count').value)||10));
+  mt_cfg.digits=Math.max(1,Math.min(6,  parseInt(document.getElementById('mt-cfg-digits').value)||2));
+  mt_cfg.dec   =Math.max(0,Math.min(4,  parseInt(document.getElementById('mt-cfg-dec').value)||0));
+  if(mt_cfg.ops.length===0){ toast('演算子を1つ以上選択してください'); return; }
+  mt_saveCfg();
+  mt_session={
+    questions:[], current:0, times:[], userAnswers:[], correctFlags:[],
+    judged:false,
+    snap:{count:mt_cfg.count,digits:mt_cfg.digits,dec:mt_cfg.dec,frac:mt_cfg.frac,ops:[...mt_cfg.ops],opCount:mt_cfg.opCount},
+    sessionStart:Date.now(), sessionSeconds:0
+  };
+  for(let i=0;i<mt_cfg.count;i++) mt_session.questions.push(mt_generateQuestion());
+  clearInterval(mt_sessionInt);
+  mt_sessionInt=setInterval(()=>{
+    mt_session.sessionSeconds++;
+    const m=Math.floor(mt_session.sessionSeconds/60),s=mt_session.sessionSeconds%60;
+    document.getElementById('mt-q-session-time').textContent=`⏱ ${m}:${String(s).padStart(2,'0')}`;
+  },1000);
+  mt_showTab('quiz');
+  mt_showQuestion();
+}
+function mt_showQuestion(){
+  if(!mt_session) return;
+  const idx=mt_session.current,q=mt_session.questions[idx];
+  mt_session.judged=false;
+  document.getElementById('mt-flashcard').classList.remove('revealed');
+  const inp=document.getElementById('mt-ans-input');
+  inp.value=''; inp.className='mt-ans-input'; inp.disabled=false;
+  document.getElementById('mt-judge-result').className='mt-judge-result';
+  document.getElementById('mt-judge-result').textContent='';
+  document.getElementById('mt-correct-reveal').style.display='none';
+  document.getElementById('mt-judgeBtn').disabled=false;
+  document.getElementById('mt-reveal-hint').style.display='none';
+  document.getElementById('mt-nextBtn').disabled=true;
+  document.getElementById('mt-nextBtn').textContent='次の問題 →';
+  document.getElementById('mt-q-text').innerHTML=q.html+'<span style="color:var(--text2)"> ＝ ？</span>';
+  document.getElementById('mt-q-counter').textContent=`${idx+1} / ${mt_session.questions.length}`;
+  document.getElementById('mt-q-progress').style.width=`${(idx/mt_session.questions.length)*100}%`;
+  clearInterval(mt_timerInt);
+  mt_qStart=Date.now();
+  document.getElementById('mt-q-time').textContent='0.0秒';
+  mt_timerInt=setInterval(()=>{
+    document.getElementById('mt-q-time').textContent=`${((Date.now()-mt_qStart)/1000).toFixed(1)}秒`;
+  },100);
+  setTimeout(()=>inp.focus(),100);
+}
+function mt_judgeAnswer(){
+  if(!mt_session||mt_session.judged) return;
+  mt_session.judged=true;
+  clearInterval(mt_timerInt);
+  const elapsed=(Date.now()-mt_qStart)/1000;
+  mt_session.times.push(elapsed);
+  const q=mt_session.questions[mt_session.current];
+  const inp=document.getElementById('mt-ans-input');
+  const userVal=inp.value.trim();
+  mt_session.userAnswers.push(userVal);
+  const ok=mt_checkAnswer(userVal,q);
+  mt_session.correctFlags.push(ok);
+  const resEl=document.getElementById('mt-judge-result');
+  const revEl=document.getElementById('mt-correct-reveal');
+  if(ok){
+    inp.className='mt-ans-input correct';
+    resEl.className='mt-judge-result correct'; resEl.textContent='⭕ 正解！';
+    document.getElementById('mt-flashcard').classList.add('revealed');
+  } else {
+    inp.className='mt-ans-input wrong';
+    resEl.className='mt-judge-result wrong'; resEl.textContent='❌ 不正解';
+    revEl.style.display='block'; revEl.textContent=`正解: ${q.answerText}`;
+  }
+  inp.disabled=true;
+  document.getElementById('mt-judgeBtn').disabled=true;
+  document.getElementById('mt-reveal-hint').style.display='block';
+  document.getElementById('mt-nextBtn').disabled=false;
+  if(mt_session.current>=mt_session.questions.length-1)
+    document.getElementById('mt-nextBtn').textContent='結果を見る ✓';
+}
+function mt_nextQuestion(){
+  if(!mt_session) return;
+  if(!mt_session.judged){ mt_judgeAnswer(); return; }
+  mt_session.current++;
+  if(mt_session.current>=mt_session.questions.length) mt_finishSession();
+  else mt_showQuestion();
+}
+function mt_quitQuiz(){
+  clearInterval(mt_timerInt); clearInterval(mt_sessionInt);
+  mt_session=null;
+  mt_showTab('settings');
+}
+function mt_backToSettings(){
+  document.getElementById('mt-view-result').style.display='none';
+  mt_showTab('settings');
+}
+
+// ─── セッション終了 ───
+function mt_cfgBadgesHtml(s){
+  const opStr=s.ops.map(o=>MT_OP_SYMBOLS[o]).join('');
+  const opCntStr=s.opCount===0?'ランダム':`${s.opCount}個`;
+  const decStr=s.dec===0?'整数のみ':`小数${s.dec}桁`;
+  const badges=[
+    {l:`${s.digits}桁`,hl:false},{l:decStr,hl:s.dec>0},{l:opStr,hl:false},
+    {l:`演算子${opCntStr}`,hl:false},
+    s.frac?{l:'分数あり',hl:true}:null
+  ].filter(Boolean);
+  return badges.map(b=>`<span class="mt-cfg-badge${b.hl?' hl':''}">${b.l}</span>`).join('');
+}
+function mt_finishSession(){
+  clearInterval(mt_timerInt); clearInterval(mt_sessionInt);
+  const times=mt_session.times;
+  const avg=times.reduce((a,b)=>a+b,0)/times.length;
+  const correctCount=mt_session.correctFlags.filter(Boolean).length;
+  const rate=Math.round(correctCount/times.length*100);
+  const snap=mt_session.snap;
+  const emojis=rate===100?'🏆':rate>=80?'🎉':rate>=60?'😊':rate>=40?'😅':'💪';
+  document.getElementById('mt-res-emoji').textContent=emojis;
+  document.getElementById('mt-res-total').textContent=`${times.length}問`;
+  document.getElementById('mt-res-correct').textContent=`${correctCount}問`;
+  document.getElementById('mt-res-rate').textContent=`${rate}%`;
+  document.getElementById('mt-res-avg').textContent=`${avg.toFixed(1)}秒`;
+  document.getElementById('mt-res-cfg-badges').innerHTML=mt_cfgBadgesHtml(snap);
+  const tbody=document.getElementById('mt-result-tbody');
+  tbody.innerHTML=mt_session.questions.map((q,i)=>{
+    const ok=mt_session.correctFlags[i], ua=mt_session.userAnswers[i]??'—';
+    return`<tr><td>${i+1}</td><td style="font-size:12px">${q.text}</td>
+    <td style="font-size:12px" class="${ok?'mt-mark-ok':'mt-mark-ng'}">${ok?'⭕ ':'❌ '}${ua}</td>
+    <td style="font-size:12px">${q.answerText}</td><td>${(times[i]||0).toFixed(1)}s</td></tr>`;
+  }).join('');
+  // record保存（設定スナップショット＋集計＋問題詳細。GASには設定のみ送る）
+  const now=new Date();
+  const DOW=['日','月','火','水','木','金','土'];
+  const dateLabel=`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}(${DOW[now.getDay()]}) ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const record={
+    sessionId:`s_${now.getTime()}`,
+    version:4,
+    date:now.toISOString(),
+    dateLabel,
+    settings:snap,
+    summary:{count:times.length,correct:correctCount,rate,avgSec:parseFloat(avg.toFixed(2)),totalSec:mt_session.sessionSeconds},
+    questions:mt_session.questions.map((q,i)=>({
+      no:i+1,
+      text:q.text,
+      answer:q.answerText,
+      userAnswer:mt_session.userAnswers[i]??'',
+      correct:mt_session.correctFlags[i],
+      timeSec:parseFloat((times[i]||0).toFixed(2))
+    }))
+  };
+  mt_records.unshift(record);
+  if(mt_records.length>50) mt_records.pop();
+  mt_saveRecords();
+  // 結果画面に切替
+  ['settings','quiz','records'].forEach(t=>{
+    document.getElementById('mt-view-'+t).style.display='none';
+    document.getElementById('mt-tab-'+t)?.classList.remove('active');
+  });
+  document.getElementById('mt-view-result').style.display='block';
+  document.getElementById('mt-tab-quiz')?.classList.add('active');
+}
+
+// ─── 成績表示 ───
+function mt_renderRecords(){
+  const el=document.getElementById('mt-records-list');
+  if(mt_records.length===0){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--text3);font-size:14px">まだ成績がありません</div>';return;}
+  el.innerHTML=mt_records.map((r,idx)=>{
+    const s=r.summary||r;
+    const correctStr=s.correct!=null?`${s.correct}/${s.count}問 正解 (${s.rate}%)`:`${s.count}問`;
+    const snap=r.settings||null;
+    const qs=r.questions||null;
+    // 問題詳細テーブル
+    const detailHtml=qs?`
+      <table class="mt-detail-table" style="margin-top:6px">
+        <thead><tr><th>#</th><th>問題</th><th>あなたの答え</th><th>正解</th><th>時間</th></tr></thead>
+        <tbody>${qs.map(q=>`<tr>
+          <td>${q.no}</td>
+          <td style="font-size:11px">${q.text}</td>
+          <td class="${q.correct?'mt-mark-ok':'mt-mark-ng'}">${q.correct?'⭕ ':'❌ '}${q.userAnswer||'—'}</td>
+          <td style="font-size:11px">${q.answer}</td>
+          <td>${q.timeSec}s</td>
+        </tr>`).join('')}</tbody>
+      </table>` : '';
+    return`<div class="mt-rec-card">
+      <div class="mt-rec-header" onclick="mt_toggleRec(${idx})">
+        <div class="mt-rec-left">
+          <span class="mt-rec-date">📅 ${r.dateLabel||r.date||'—'}</span>
+          <span class="mt-rec-score">${correctStr} ／ 平均 ${s.avgSec}秒</span>
+          ${snap?`<div class="mt-cfg-badges" style="margin-top:4px;justify-content:flex-start">${mt_cfgBadgesHtml(snap)}</div>`:''}
+        </div>
+        <span class="mt-rec-chevron" id="mt-chev-${idx}">▼</span>
+      </div>
+      <div class="mt-rec-body" id="mt-body-${idx}">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px">合計時間: ${s.totalSec}秒</div>
+        ${snap?`<div class="mt-cfg-badges" style="justify-content:flex-start;margin-bottom:6px">${mt_cfgBadgesHtml(snap)}</div>`:''}
+        ${detailHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+function mt_toggleRec(idx){
+  const body=document.getElementById('mt-body-'+idx);
+  const chev=document.getElementById('mt-chev-'+idx);
+  const open=body.classList.toggle('open');
+  chev.classList.toggle('open',open);
+}
+function mt_clearRecords(){
+  if(mt_records.length===0) return;
+  if(!confirm('すべての成績を削除しますか？')) return;
+  mt_records=[]; mt_saveRecords(); mt_renderRecords();
+}
+
+// ─── GAS連携：設定のみ同期 ───
+// saveProgress/getProgress 時に mathTrainerCfg を payload に含める
+// （既存の syncProgressUp / syncProgressDown を拡張するためのフック）
+function mt_getCfgForGas(){
+  return mt_cfg;
+}
+function mt_applyGasCfg(cfgFromGas){
+  if(!cfgFromGas||typeof cfgFromGas!=='object') return;
+  mt_cfg=Object.assign(mt_cfg, cfgFromGas);
+  mt_applySettingsToUI();
+  mt_saveCfg();
+}
+
+// ─── キーボードイベント ───
+document.addEventListener('keydown',e=>{
+  if(state.currentTab!=='math') return;
+  if(document.getElementById('mt-view-quiz').style.display!=='none'){
+    if(e.key==='Enter') mt_judgeAnswer();
+  }
+});
+document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
+  if(e.key==='Enter') mt_judgeAnswer();
+});
+
 initTheme();
+mt_init();
 init();
 </script>
 </body>
