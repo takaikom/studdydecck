@@ -3,6 +3,8 @@
 =======================================================
   StudyDeck 変更履歴
 =======================================================
+[v40] そろばんサイズ調整、カード内にプレビュー表示追加
+
 [v39] 算数クイズ画面にそろばんを追加
   ① クイズ回答エリアの下にSVGベースの本格そろばんを配置
      - 9桁（一〜億）、木目調の枠・梁・軸棒付き
@@ -15,6 +17,11 @@
      - リセットボタンで手動リセットも可能
      - ダーク/ライトテーマ自動対応・リサイズ対応
      - 答え入力には影響しない純粋な計算補助ツール
+  ② (追加改修) そろばんをカード右上にミニプレビュー表示（キーボード表示中も確認可能）
+  ③ (追加改修) 終了・次の問題ボタンをそろばんの上に移動
+  ④ (追加改修) 玉の操作をスワイプ対応（1珠:上スワイプで梁へ/下スワイプで離す、5珠:下スワイプで梁へ/上スワイプで離す）
+  ⑤ (追加改修) そろばんを画面幅に合わせてスケール調整（機種・サイズ問わず最大化）
+  ⑥ (追加改修) カードのpadding縮小・各ボタンマージン縮小でそろばんの表示領域を最大化
 
 [v38] 算数トレーナー統合
   ① タブバーに「🧮 算数」タブを追加（4つ目）
@@ -478,17 +485,17 @@ html.light .mt-setting-row{border-bottom-color:#dde0ea}
 .mt-btn-start:disabled{opacity:.4;cursor:not-allowed}
 /* クイズ画面 */
 .mt-quiz-wrap{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
-.mt-quiz-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:var(--text2)}
-.mt-prog-bar{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.mt-quiz-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;color:var(--text2)}
+.mt-prog-bar{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:8px;overflow:hidden}
 .mt-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent3),var(--blue));border-radius:2px;transition:width .3s}
-.mt-flashcard{background:var(--surface);border:2px solid var(--surface3);border-radius:var(--radius);min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;transition:var(--trans);text-align:center;position:relative;margin-bottom:12px}
+.mt-flashcard{background:var(--surface);border:2px solid var(--surface3);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 16px 12px;transition:var(--trans);text-align:center;position:relative;margin-bottom:8px}
 .mt-flashcard.revealed{border-color:var(--green)}
 .mt-q-text{font-size:clamp(20px,5vw,30px);font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.3}
 .mt-frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.85em;margin:0 3px}
 .mt-frac-num{border-bottom:2px solid currentColor;padding:0 4px;line-height:1.2}
 .mt-frac-den{padding:0 4px;line-height:1.2}
 .mt-time-badge{position:absolute;top:8px;right:10px;font-size:12px;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:20px}
-.mt-ans-wrap{margin-top:14px;width:100%;display:flex;flex-direction:column;align-items:center;gap:8px}
+.mt-ans-wrap{margin-top:8px;width:100%;display:flex;flex-direction:column;align-items:center;gap:6px}
 .mt-ans-row{display:flex;align-items:center;gap:8px}
 .mt-ans-input{font-size:20px;padding:8px 14px;width:150px;border:2px solid var(--surface3);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);text-align:center;outline:none;transition:var(--trans);font-family:inherit}
 .mt-ans-input:focus{border-color:var(--accent3)}
@@ -501,7 +508,7 @@ html.light .mt-setting-row{border-bottom-color:#dde0ea}
 .mt-judge-result.correct{display:inline-block;background:rgba(46,204,113,.15);color:var(--green)}
 .mt-judge-result.wrong{display:inline-block;background:rgba(231,76,60,.15);color:var(--red)}
 .mt-correct-reveal{font-size:13px;color:var(--text3);margin-top:4px;display:none}
-.mt-quiz-btns{display:flex;gap:8px;margin-top:4px}
+.mt-quiz-btns{display:flex;gap:8px;margin-top:0;margin-bottom:8px}
 .mt-btn-next{flex:1;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:var(--trans);font-family:inherit}
 .mt-btn-next:active{opacity:.85}
 .mt-btn-quit{padding:12px 16px;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--radius-sm);font-size:14px;color:var(--text2);cursor:pointer;font-family:inherit;transition:var(--trans)}
@@ -542,14 +549,18 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
 .mt-gas-banner{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent3);line-height:1.6}
 
 /* ══ そろばん ══ */
-.soroban-outer{margin-top:12px;user-select:none;-webkit-user-select:none}
-.soroban-header{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.soroban-outer{margin-top:6px;user-select:none;-webkit-user-select:none;touch-action:none}
+.soroban-header{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
 .soroban-reset-btn{font-size:10px;color:var(--text3);background:none;border:1px solid var(--surface3);border-radius:4px;padding:2px 8px;cursor:pointer;font-family:inherit;transition:var(--trans)}
 .soroban-reset-btn:active{opacity:.6}
 .soroban-frame-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
 .soroban-frame-wrap::-webkit-scrollbar{height:3px}
 .soroban-frame-wrap::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
 #soroban-svg{display:block;touch-action:none}
+/* ── そろばんミニプレビュー ── */
+.soroban-mini-wrap{position:absolute;top:6px;left:6px;pointer-events:none;opacity:0.85;z-index:2}
+#soroban-mini-svg{display:block}
+
 </style>
 </head>
 <body>
@@ -666,7 +677,7 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
 
     <!-- タブ: 算数トレーナー -->
     <div id="tab-math" style="flex:1;overflow:hidden;display:none;flex-direction:column">
-      <div class="mt-main" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
+      <div class="mt-main" id="mt-main" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
 
         <!-- 算数内タブ -->
         <div class="mt-tabs">
@@ -776,8 +787,13 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
             <span id="mt-q-session-time">⏱ 0:00</span>
           </div>
           <div class="mt-prog-bar"><div class="mt-prog-fill" id="mt-q-progress" style="width:0%"></div></div>
+          <!-- カード：問題文＋入力＋ミニそろばん -->
           <div class="mt-flashcard" id="mt-flashcard">
             <div class="mt-time-badge" id="mt-q-time">0.0秒</div>
+            <!-- ミニそろばんプレビュー（右上） -->
+            <div class="soroban-mini-wrap">
+              <svg id="soroban-mini-svg"></svg>
+            </div>
             <div class="mt-q-text" id="mt-q-text">準備中…</div>
             <div class="mt-ans-wrap">
               <div class="mt-ans-row">
@@ -788,21 +804,21 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
               <div class="mt-correct-reveal" id="mt-correct-reveal"></div>
             </div>
           </div>
-          <!-- そろばん -->
+          <!-- ボタン（そろばんの上） -->
+          <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:6px;display:none" id="mt-reveal-hint">次の問題へ進むか、終了できます</div>
+          <div class="mt-quiz-btns">
+            <button class="mt-btn-quit" onclick="mt_quitQuiz()">終了</button>
+            <button class="mt-btn-next" id="mt-nextBtn" onclick="mt_nextQuestion()" disabled>次の問題 →</button>
+          </div>
+          <!-- そろばん（ボタンの下・大きく表示） -->
           <div class="soroban-outer">
             <div class="soroban-header">
               <span>🧮 そろばん</span>
               <button class="soroban-reset-btn" onclick="soroban_reset()">リセット</button>
             </div>
-            <div class="soroban-frame-wrap">
+            <div class="soroban-frame-wrap" id="soroban-frame-wrap">
               <svg id="soroban-svg"></svg>
             </div>
-          </div>
-
-          <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:8px;display:none" id="mt-reveal-hint">次の問題へ進むか、終了できます</div>
-          <div class="mt-quiz-btns">
-            <button class="mt-btn-quit" onclick="mt_quitQuiz()">終了</button>
-            <button class="mt-btn-next" id="mt-nextBtn" onclick="mt_nextQuestion()" disabled>次の問題 →</button>
           </div>
         </div>
 
@@ -3746,179 +3762,198 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
 // ─── そろばん（SVGベース本格版）───
 (function(){
   // ── レイアウト定数 ──
-  const COLS     = 9;   // 桁数
-  const CW       = 28;  // 列幅
-  const GAP      = 2;   // 列間隔
-  const ROD_W    = 3;   // 軸棒幅
-  const BEAD_RX  = 11;  // 玉の横半径
-  const BEAD_RY  = 7;   // 玉の縦半径
-  const FRAME_T  = 8;   // 上下枠の太さ（内側余白兼）
-  const FRAME_S  = 6;   // 左右枠の太さ
-  const BEAM_H   = 5;   // 梁の高さ
+  const COLS      = 9;
+  const CW        = 36;   // 列幅
+  const GAP       = 3;    // 列間隔
+  const ROD_W     = 4;    // 軸棒幅
+  const BEAD_RX   = 14;   // 玉の横半径
+  const BEAD_RY   = 9;    // 玉の縦半径
+  const FRAME_T   = 10;   // 上下枠の太さ
+  const FRAME_S   = 8;    // 左右枠の太さ
+  const BEAM_H    = 6;    // 梁の高さ
+  const LABEL_H   = 14;   // 桁ラベル高さ
 
-  const LOWER_BEAD_COUNT = 4;
+  const L_COUNT   = 4;    // 一玉の数
+  const BEAD_GAP  = 3;
+  const BEAD_SLOT = BEAD_RY*2 + BEAD_GAP;
 
-  const BEAD_GAP   = 2;
-  const BEAD_SLOT  = BEAD_RY*2 + BEAD_GAP;
+  const UPPER_H   = BEAD_SLOT + 8;
+  const LOWER_H   = L_COUNT * BEAD_SLOT + 10;
+  const INNER_H   = UPPER_H + BEAM_H + LOWER_H;
+  const TOTAL_H   = FRAME_T + INNER_H + FRAME_T + LABEL_H;
+  const INNER_W   = COLS*CW + (COLS-1)*GAP;
+  const TOTAL_W   = FRAME_S + INNER_W + FRAME_S;
+  const BEAM_Y    = FRAME_T + UPPER_H;
 
-  const UPPER_AREA_H = BEAD_SLOT + 6;   // 五玉エリア
-  const LOWER_AREA_H = LOWER_BEAD_COUNT * BEAD_SLOT + 8; // 一玉エリア
-  const LABEL_H  = 12; // 桁ラベル用の高さ
+  // 定位点列（右から3番目=col 6, 右から6番目=col 3）
+  const TEII      = new Set([6, 3]);
 
-  const INNER_H  = UPPER_AREA_H + BEAM_H + LOWER_AREA_H;
-  const TOTAL_H  = FRAME_T + INNER_H + FRAME_T + LABEL_H;
-  const INNER_W  = COLS * CW + (COLS-1) * GAP;
-  const TOTAL_W  = FRAME_S + INNER_W + FRAME_S;
+  // ── ミニプレビュー定数（1/3スケール相当） ──
+  const MINI_SCALE = 0.38;
 
-  // 梁のY座標（枠内の絶対Y）
-  const BEAM_Y   = FRAME_T + UPPER_AREA_H;
+  // ── state ──
+  const upper  = new Array(COLS).fill(false); // 五玉: true=梁側
+  const lower  = new Array(COLS).fill(0);     // 一玉: 梁側の数
 
-  // 定位点の列インデックス（右から3桁目=col 6、右から6桁目=col 3）
-  // 9桁の場合: 右端=col8, 右から3=col6, 右から6=col3
-  const TEII_COLS = [6, 3]; // 千・百万の位
-
-  // state
-  const upper = new Array(COLS).fill(false);
-  const lower = new Array(COLS).fill(0);
-
-  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const NS = 'http://www.w3.org/2000/svg';
 
   function colX(c){ return FRAME_S + c*(CW+GAP) + CW/2; }
 
-  function mk(tag, attrs, parent){
-    const el = document.createElementNS(SVG_NS, tag);
-    for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
-    if(parent) parent.appendChild(el);
-    return el;
+  function el(tag, attrs, parent){
+    const e = document.createElementNS(NS, tag);
+    for(const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if(parent) parent.appendChild(e);
+    return e;
   }
 
-  function buildSVG(){
-    const svg = document.getElementById('soroban-svg');
-    if(!svg) return;
+  // ── 色テーマ ──
+  function colors(){
+    const L = document.documentElement.classList.contains('light');
+    return {
+      frame:   L ? '#6B4010' : '#5A3008',
+      frame2:  L ? '#9B6820' : '#8B5018',
+      rod:     L ? '#666'    : '#ccc',
+      beadF:   L ? '#EEC870' : '#C89028',
+      beadA:   L ? '#C85800' : '#F0A010',
+      beadS:   L ? '#6B2800' : '#4B1800',
+      beamC:   L ? '#6B4010' : '#5A3008',
+      beamL:   L ? '#4A2800' : '#2A1000',
+      bg:      L ? '#1a0e00' : '#100800',
+      teii:    L ? '#dd2200' : '#ff5522',
+      text:    L ? '#666'    : '#aaa',
+    };
+  }
 
-    // SVGサイズ：親コンテナ幅に合わせてスケール
-    const wrap = svg.parentElement;
-    const wrapW = wrap ? wrap.clientWidth : TOTAL_W;
-    const scale = wrapW >= TOTAL_W ? 1 : wrapW / TOTAL_W;
-    const dispW = Math.round(TOTAL_W * scale);
-    const dispH = Math.round(TOTAL_H * scale);
-    svg.setAttribute('width',  dispW);
-    svg.setAttribute('height', dispH);
-    svg.setAttribute('viewBox', `0 0 ${TOTAL_W} ${TOTAL_H}`);
-    svg.style.display = 'block';
-    svg.style.margin  = '0 auto'; // 中央配置
+  // ── SVG描画（メイン・ミニ共通） ──
+  function drawSoroban(svgEl, scale, interactive){
+    if(!svgEl) return;
+    const W = Math.round(TOTAL_W * scale);
+    const H = Math.round(TOTAL_H * scale);
+    svgEl.setAttribute('width',  W);
+    svgEl.setAttribute('height', H);
+    svgEl.setAttribute('viewBox', `0 0 ${TOTAL_W} ${TOTAL_H}`);
+    svgEl.style.display = 'block';
+    if(!interactive) svgEl.style.margin = '0';
 
-    const isLight = document.documentElement.classList.contains('light');
-    const frameC  = isLight ? '#7B5010' : '#6B3A0A';
-    const frameC2 = isLight ? '#A07020' : '#8B5010';
-    const rodC    = isLight ? '#666'    : '#bbb';
-    const beadF   = isLight ? '#F0D090' : '#C8982A';
-    const beadA   = isLight ? '#D06000' : '#F5A020';
-    const beadS   = isLight ? '#7B3000' : '#5B2000';
-    const beamC   = isLight ? '#7B5010' : '#6B3A0A';
-    const beamLine= isLight ? '#5A3800' : '#3A2000'; // 梁の線色
-    const textC   = isLight ? '#555'    : '#999';
-    const teiiC   = isLight ? '#cc3300' : '#ff6633'; // 定位点色
+    const C = colors();
+    svgEl.innerHTML = '';
 
-    svg.innerHTML = '';
+    // グラデーション
+    const defs = el('defs',{},svgEl);
+    const gN = el('radialGradient',{id:'bgN_'+svgEl.id,cx:'35%',cy:'28%',r:'65%'},defs);
+    el('stop',{'offset':'0%','stop-color':'#FFF0A0','stop-opacity':'0.9'},gN);
+    el('stop',{'offset':'100%','stop-color':C.beadF},gN);
+    const gA = el('radialGradient',{id:'bgA_'+svgEl.id,cx:'35%',cy:'28%',r:'65%'},defs);
+    el('stop',{'offset':'0%','stop-color':'#FFE060','stop-opacity':'0.95'},gA);
+    el('stop',{'offset':'100%','stop-color':C.beadA},gA);
+    const gFr = el('linearGradient',{id:'bgFr_'+svgEl.id,x1:'0',y1:'0',x2:'0',y2:'1'},defs);
+    el('stop',{'offset':'0%','stop-color':C.frame2},gFr);
+    el('stop',{'offset':'100%','stop-color':C.frame},gFr);
 
-    // ── グラデーション定義 ──
-    const defs = mk('defs',{},svg);
-    // 玉グラデ（通常）
-    const gN = mk('radialGradient',{id:'bgN',cx:'35%',cy:'30%',r:'65%'},defs);
-    mk('stop',{'offset':'0%','stop-color':isLight?'#FFF8DC':'#F0D090','stop-opacity':'0.9'},gN);
-    mk('stop',{'offset':'100%','stop-color':beadF,'stop-opacity':'1'},gN);
-    // 玉グラデ（アクティブ）
-    const gA = mk('radialGradient',{id:'bgA',cx:'35%',cy:'30%',r:'65%'},defs);
-    mk('stop',{'offset':'0%','stop-color':isLight?'#FFD080':'#FFD060','stop-opacity':'0.95'},gA);
-    mk('stop',{'offset':'100%','stop-color':beadA,'stop-opacity':'1'},gA);
-    // 枠グラデ
-    const gF = mk('linearGradient',{id:'bgF',x1:'0',y1:'0',x2:'0',y2:'1'},defs);
-    mk('stop',{'offset':'0%','stop-color':frameC2},gF);
-    mk('stop',{'offset':'100%','stop-color':frameC},gF);
+    const fid = `url(#bgFr_${svgEl.id})`;
+    // 枠
+    el('rect',{x:0,y:0,width:TOTAL_W,height:FRAME_T,fill:fid,rx:4},svgEl);
+    el('rect',{x:0,y:TOTAL_H-FRAME_T-LABEL_H,width:TOTAL_W,height:FRAME_T+LABEL_H,fill:fid,rx:4},svgEl);
+    el('rect',{x:0,y:FRAME_T,width:FRAME_S,height:INNER_H+FRAME_T,fill:fid},svgEl);
+    el('rect',{x:TOTAL_W-FRAME_S,y:FRAME_T,width:FRAME_S,height:INNER_H+FRAME_T,fill:fid},svgEl);
+    el('rect',{x:0.5,y:0.5,width:TOTAL_W-1,height:TOTAL_H-LABEL_H-0.5,fill:'none',stroke:C.frame2,'stroke-width':1.5,rx:4},svgEl);
 
-    // ── 外枠（木製フレーム）──
-    // 上枠
-    mk('rect',{x:0,y:0,width:TOTAL_W,height:FRAME_T,fill:'url(#bgF)',rx:4},svg);
-    // 下枠（ラベル含む）
-    mk('rect',{x:0,y:TOTAL_H-FRAME_T-LABEL_H,width:TOTAL_W,height:FRAME_T+LABEL_H,fill:'url(#bgF)',rx:4},svg);
-    // 左枠
-    mk('rect',{x:0,y:FRAME_T,width:FRAME_S,height:INNER_H+FRAME_T,fill:'url(#bgF)'},svg);
-    // 右枠
-    mk('rect',{x:TOTAL_W-FRAME_S,y:FRAME_T,width:FRAME_S,height:INNER_H+FRAME_T,fill:'url(#bgF)'},svg);
-    // 枠のボーダー
-    mk('rect',{x:0.5,y:0.5,width:TOTAL_W-1,height:TOTAL_H-LABEL_H-0.5,fill:'none',stroke:frameC2,'stroke-width':1.5,rx:4},svg);
+    // 内側背景
+    el('rect',{x:FRAME_S,y:FRAME_T,width:INNER_W,height:INNER_H,fill:C.bg},svgEl);
 
-    // ── 背景（内側）──
-    const bgColor = isLight ? '#2a1a00' : '#1a0e00';
-    mk('rect',{x:FRAME_S,y:FRAME_T,width:INNER_W,height:INNER_H,fill:bgColor},svg);
+    // 梁
+    el('rect',{x:0,y:BEAM_Y,width:TOTAL_W,height:BEAM_H,fill:C.beamC},svgEl);
+    el('line',{x1:0,y1:BEAM_Y,  x2:TOTAL_W,y2:BEAM_Y,  stroke:C.beamL,'stroke-width':1.2},svgEl);
+    el('line',{x1:0,y1:BEAM_Y+BEAM_H,x2:TOTAL_W,y2:BEAM_Y+BEAM_H,stroke:C.beamL,'stroke-width':1.2},svgEl);
 
-    // ── 梁（横棒）── ※玉の下に描画するため先に
-    mk('rect',{x:0,y:BEAM_Y,width:TOTAL_W,height:BEAM_H,fill:beamC},svg);
-    // 梁の上下に細い線（本物らしさ）
-    mk('line',{x1:0,y1:BEAM_Y,x2:TOTAL_W,y2:BEAM_Y,stroke:beamLine,'stroke-width':1},svg);
-    mk('line',{x1:0,y1:BEAM_Y+BEAM_H,x2:TOTAL_W,y2:BEAM_Y+BEAM_H,stroke:beamLine,'stroke-width':1},svg);
-
-    // ── 各列 ──
     for(let c=0;c<COLS;c++){
       const cx = colX(c);
 
       // 軸棒
-      mk('rect',{x:cx-ROD_W/2,y:FRAME_T,width:ROD_W,height:INNER_H,fill:rodC,rx:1},svg);
+      el('rect',{x:cx-ROD_W/2,y:FRAME_T,width:ROD_W,height:INNER_H,fill:C.rod,rx:1.5},svgEl);
 
-      // 定位点（梁の下縁に小さな丸）
-      if(TEII_COLS.includes(c)){
-        mk('circle',{cx:cx,cy:BEAM_Y+BEAM_H+4,r:3,fill:teiiC},svg);
+      // 定位点
+      if(TEII.has(c)){
+        el('circle',{cx,cy:BEAM_Y+BEAM_H+5,r:3.5,fill:C.teii},svgEl);
       }
 
       // 桁ラベル
       const labels=['','十','百','千','万','十万','百万','千万','億'];
-      const lbl = mk('text',{x:cx,y:TOTAL_H-2,'text-anchor':'middle','font-size':'7.5',fill:textC,'font-family':'Hiragino Sans,sans-serif'},svg);
-      lbl.textContent = labels[COLS-1-c]||'';
+      const t = el('text',{x:cx,y:TOTAL_H-2,'text-anchor':'middle','font-size':'8',fill:C.text,'font-family':'Hiragino Sans,sans-serif'},svgEl);
+      t.textContent = labels[COLS-1-c]||'';
 
-      // ── 五玉（上段）──
-      const uActive   = upper[c];
-      const u_yActive   = BEAM_Y - BEAD_RY - 2;
-      const u_yInactive = FRAME_T + BEAD_RY + 3;
-      const u_cy = uActive ? u_yActive : u_yInactive;
+      // 五玉
+      const uAct = upper[c];
+      const u_yA = BEAM_Y - BEAD_RY - 3;
+      const u_yI = FRAME_T + BEAD_RY + 4;
+      const u_cy = uAct ? u_yA : u_yI;
+      const nid = `url(#bgN_${svgEl.id})`;
+      const aid = `url(#bgA_${svgEl.id})`;
+      const ub = el('ellipse',{cx,cy:u_cy,rx:BEAD_RX,ry:BEAD_RY,
+        fill:uAct?aid:nid, stroke:C.beadS,'stroke-width':1.4},svgEl);
+      if(interactive){ ub.style.cursor='pointer'; ub.dataset.col=c; ub.dataset.type='upper'; }
+      el('ellipse',{cx:cx-2.5,cy:u_cy-BEAD_RY*0.32,rx:BEAD_RX*0.38,ry:BEAD_RY*0.26,fill:'rgba(255,255,255,0.42)'},svgEl).style.pointerEvents='none';
 
-      const ubead = mk('ellipse',{cx,cy:u_cy,rx:BEAD_RX,ry:BEAD_RY,
-        fill: uActive ? 'url(#bgA)' : 'url(#bgN)',
-        stroke:beadS,'stroke-width':1.2},svg);
-      ubead.style.cursor='pointer';
-      ubead.dataset.col=c; ubead.dataset.type='upper';
-      // 光沢
-      const uhi = mk('ellipse',{cx:cx-2,cy:u_cy-BEAD_RY*0.35,
-        rx:BEAD_RX*0.4,ry:BEAD_RY*0.28,fill:'rgba(255,255,255,0.4)'},svg);
-      uhi.style.pointerEvents='none';
-
-      // ── 一玉（下段）──
-      const lowerTop = BEAM_Y + BEAM_H;
-      for(let i=0;i<LOWER_BEAD_COUNT;i++){
-        const activated = i < lower[c];
+      // 一玉
+      const lTop = BEAM_Y + BEAM_H;
+      for(let i=0;i<L_COUNT;i++){
+        const act = i < lower[c];
         let l_cy;
-        if(activated){
-          l_cy = lowerTop + BEAD_RY + 3 + i*BEAD_SLOT;
+        if(act){
+          l_cy = lTop + BEAD_RY + 4 + i*BEAD_SLOT;
         } else {
-          const fromBottom = LOWER_BEAD_COUNT-1-i;
-          l_cy = lowerTop + LOWER_AREA_H - BEAD_RY - 3 - fromBottom*BEAD_SLOT;
+          l_cy = lTop + LOWER_H - BEAD_RY - 4 - (L_COUNT-1-i)*BEAD_SLOT;
         }
-        const lbead = mk('ellipse',{cx,cy:l_cy,rx:BEAD_RX,ry:BEAD_RY,
-          fill: activated ? 'url(#bgA)' : 'url(#bgN)',
-          stroke:beadS,'stroke-width':1.2},svg);
-        lbead.style.cursor='pointer';
-        lbead.dataset.col=c; lbead.dataset.type='lower'; lbead.dataset.idx=i;
-        const lhi = mk('ellipse',{cx:cx-2,cy:l_cy-BEAD_RY*0.35,
-          rx:BEAD_RX*0.4,ry:BEAD_RY*0.28,fill:'rgba(255,255,255,0.4)'},svg);
-        lhi.style.pointerEvents='none';
+        const lb = el('ellipse',{cx,cy:l_cy,rx:BEAD_RX,ry:BEAD_RY,
+          fill:act?aid:nid, stroke:C.beadS,'stroke-width':1.4},svgEl);
+        if(interactive){ lb.style.cursor='pointer'; lb.dataset.col=c; lb.dataset.type='lower'; lb.dataset.idx=i; }
+        el('ellipse',{cx:cx-2.5,cy:l_cy-BEAD_RY*0.32,rx:BEAD_RX*0.38,ry:BEAD_RY*0.26,fill:'rgba(255,255,255,0.42)'},svgEl).style.pointerEvents='none';
       }
     }
+  }
 
-    // イベント（毎回付け直し）
-    svg.onclick = handleClick;
+  // ── メインSVG描画（幅に合わせてスケール） ──
+  function buildMain(){
+    const svg = document.getElementById('soroban-svg');
+    if(!svg) return;
+    const wrap = document.getElementById('soroban-frame-wrap');
+    const avail = wrap ? wrap.clientWidth : window.innerWidth - 32;
+    const scale = avail >= TOTAL_W ? 1 : avail / TOTAL_W;
+    drawSoroban(svg, scale, true);
+    svg.style.margin = '0 auto';
+    // イベント付け替え
+    svg.onclick   = null;
+    svg.ontouchstart = null;
+    svg.ontouchend   = null;
+    attachEvents(svg);
+    buildMini();
+  }
+
+  // ── ミニSVG描画 ──
+  function buildMini(){
+    const mini = document.getElementById('soroban-mini-svg');
+    if(!mini) return;
+    drawSoroban(mini, MINI_SCALE, false);
+  }
+
+  // ── タッチ/クリックイベント ──
+  // 一玉: 上スワイプで梁に寄せる / 下スワイプで離す
+  // 五玉: 下スワイプで梁に寄せる / 上スワイプで離す
+  // PC（クリック）: 従来通りトグル
+  let touchStartY = null;
+  let touchTarget = null;
+
+  function attachEvents(svg){
+    // PC クリック
+    svg.addEventListener('click', handleClick);
+    // タッチ
+    svg.addEventListener('touchstart', handleTouchStart, {passive:true});
+    svg.addEventListener('touchend',   handleTouchEnd,   {passive:true});
   }
 
   function handleClick(e){
+    // タッチ後の合成クリックは無視
+    if(e._fromTouch) return;
     const el = e.target;
     const col = parseInt(el.dataset.col);
     if(isNaN(col)) return;
@@ -3928,31 +3963,79 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
       const idx = parseInt(el.dataset.idx);
       if(idx < lower[col]) lower[col] = idx;
       else lower[col] = idx + 1;
-    }
-    buildSVG();
+    } else return;
+    buildMain();
   }
 
+  function handleTouchStart(e){
+    if(e.touches.length !== 1) return;
+    touchStartY = e.touches[0].clientY;
+    touchTarget = e.target;
+  }
+
+  function handleTouchEnd(e){
+    if(touchStartY === null || !touchTarget) return;
+    const t = e.changedTouches[0];
+    const dy = t.clientY - touchStartY; // 正=下方向
+    touchStartY = null;
+
+    const col = parseInt(touchTarget.dataset.col);
+    if(isNaN(col)){ touchTarget=null; return; }
+
+    const THRESH = 6; // 判定閾値px
+
+    if(touchTarget.dataset.type === 'upper'){
+      // 五玉: 下スワイプ → 梁に寄せる(true), 上スワイプ → 離す(false)
+      if(dy >  THRESH) upper[col] = true;
+      else if(dy < -THRESH) upper[col] = false;
+      else upper[col] = !upper[col]; // 微動=トグル
+    } else if(touchTarget.dataset.type === 'lower'){
+      const idx = parseInt(touchTarget.dataset.idx);
+      if(dy < -THRESH){
+        // 上スワイプ → 梁に寄せる: idx+1個アクティブに
+        lower[col] = Math.max(lower[col], idx + 1);
+      } else if(dy > THRESH){
+        // 下スワイプ → 離す: idx個以下に
+        lower[col] = Math.min(lower[col], idx);
+      } else {
+        // 微動=クリック相当
+        if(idx < lower[col]) lower[col] = idx;
+        else lower[col] = idx + 1;
+      }
+    } else { touchTarget=null; return; }
+
+    touchTarget = null;
+    buildMain();
+  }
+
+  // ── リセット ──
   window.soroban_reset = function(){
     for(let c=0;c<COLS;c++){ upper[c]=false; lower[c]=0; }
-    buildSVG();
+    buildMain();
   };
 
-  // mt_showQuestion をフックしてリセット
+  // mt_showQuestion フック（次の問題でリセット）
   const _origShow = window.mt_showQuestion;
   if(typeof _origShow === 'function'){
     window.mt_showQuestion = function(...a){ _origShow(...a); window.soroban_reset(); };
   }
 
+  // ── 初期化 ──
   function init(){
-    buildSVG();
-    // テーマ変化時に再描画
-    const obs = new MutationObserver(()=>buildSVG());
-    obs.observe(document.documentElement,{attributes:true,attributeFilter:['class']});
-    // リサイズ時にも再描画（スケール調整）
-    window.addEventListener('resize',buildSVG);
+    buildMain();
+    // テーマ切替で再描画
+    new MutationObserver(buildMain).observe(
+      document.documentElement, {attributes:true, attributeFilter:['class']}
+    );
+    // リサイズで再描画
+    let resizeTimer;
+    window.addEventListener('resize', ()=>{
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(buildMain, 100);
+    });
   }
 
-  if(document.readyState==='loading'){
+  if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
