@@ -495,7 +495,7 @@ html.light .mt-setting-row{border-bottom-color:#dde0ea}
 .mt-frac-num{border-bottom:2px solid currentColor;padding:0 4px;line-height:1.2}
 .mt-frac-den{padding:0 4px;line-height:1.2}
 .mt-time-badge{position:absolute;top:8px;right:10px;font-size:12px;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:20px}
-.mt-ans-wrap{margin-top:14px;width:100%;display:flex;flex-direction:column;align-items:center;gap:8px}
+.mt-ans-wrap{margin-top:20px;width:100%;display:flex;flex-direction:column;align-items:center;gap:8px}
 .mt-ans-row{display:flex;align-items:center;gap:8px}
 .mt-ans-input{font-size:20px;padding:8px 14px;width:150px;border:2px solid var(--surface3);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);text-align:center;outline:none;transition:var(--trans);font-family:inherit}
 .mt-ans-input:focus{border-color:var(--accent3)}
@@ -3789,7 +3789,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
   const TEII      = new Set([6, 3]);
 
   // ── ミニプレビュー定数（1/3スケール相当） ──
-  const MINI_SCALE = 0.28;
+  const MINI_SCALE = 0.20;
 
   // ── state ──
   const upper  = new Array(COLS).fill(false); // 五玉: true=梁側
