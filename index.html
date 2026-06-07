@@ -457,7 +457,7 @@ input[type=file]{display:none}
    ══════════════════════════════════════════════════════ */
 #tab-math{flex:1;overflow:hidden;display:none;flex-direction:column}
 #tab-math .mt-main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
-.mt-tabs{display:flex;gap:0;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin-bottom:14px}
+.mt-tabs{display:flex;gap:0;background:var(--surface2);border-radius:var(--radius-sm);padding:3px;margin:0 16px 10px;flex-shrink:0}
 .mt-tab{flex:1;padding:7px;text-align:center;border-radius:var(--radius-xs);cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);transition:var(--trans);border:none;background:none;font-family:inherit}
 .mt-tab.active{background:var(--surface);color:var(--accent3);box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .mt-card{background:var(--surface);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:16px;margin-bottom:12px}
@@ -679,13 +679,6 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
     <div id="tab-math" style="flex:1;overflow:hidden;display:none;flex-direction:column">
       <div class="mt-main" id="mt-main" style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch">
 
-        <!-- 算数内タブ -->
-        <div class="mt-tabs">
-          <button class="mt-tab active" id="mt-tab-settings" onclick="mt_showTab('settings')">⚙️ 設定</button>
-          <button class="mt-tab" id="mt-tab-quiz" onclick="mt_showTab('quiz')">📝 問題</button>
-          <button class="mt-tab" id="mt-tab-records" onclick="mt_showTab('records')">📊 成績</button>
-        </div>
-
         <!-- 設定ビュー -->
         <div id="mt-view-settings">
           <div class="mt-gas-banner" id="mt-gas-banner" style="display:none">
@@ -857,6 +850,11 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
         </div>
 
       </div><!-- /mt-main -->
+      <div class="mt-tabs">
+        <button class="mt-tab active" id="mt-tab-settings" onclick="mt_showTab('settings')">⚙️ 設定</button>
+        <button class="mt-tab" id="mt-tab-quiz" onclick="mt_showTab('quiz')">📝 問題</button>
+        <button class="mt-tab" id="mt-tab-records" onclick="mt_showTab('records')">📊 成績</button>
+      </div>
     </div><!-- /tab-math -->
 
   </div><!-- /home-tab-content -->
