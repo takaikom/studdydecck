@@ -3,7 +3,30 @@
 =======================================================
   StudyDeck 変更履歴
 =======================================================
-[v40] そろばんサイズ調整、カード内にプレビュー表示追加
+[v43] ユーザー選択画面UX改善・GAS設定UX改善・ヘッダー同期ボタン追加・設定画面整理
+
+  ① GAS URL入力欄でEnterキーを押すと接続（ユーザー画面・設定タブ両方）
+  ② ユーザー選択画面のGAS設定欄をユーザーグリッドの下に移動
+  ③ ユーザー選択画面にテーマ切替ボタン（🌙）を追加（右上）
+
+  ① ユーザー選択画面にGAS設定欄を追加
+     - URLを入力して「接続」するだけでGAS連携が完了
+     - 接続時にユーザー一覧を自動同期（新規デバイスでも既存ユーザーがすぐ表示）
+     - 「クリア」ボタンで設定を解除（初回はURL入力前は非表示）
+
+  ② 設定画面のGAS連携設定を改善
+     - 「保存」ボタン → 「接続」に変更（保存と同時に接続テスト・ユーザー同期を実行）
+     - 「接続テスト」ボタンを削除（「接続」ボタンで代替）
+     - 接続時にユーザー一覧を同期するよう変更
+
+  ③ ホームヘッダーに ↑ / ↓ ボタンを追加
+     - ↑: 成績をGASにアップロード
+     - ↓: 成績をGASからダウンロード
+     - 設定タブまで行かずにワンタップで同期可能
+
+  ④ 設定画面からテーマセクションを削除
+     - ヘッダーの🌙ボタンで切り替え可能なため不要
+
 
 [v39] 算数クイズ画面にそろばんを追加
   ① クイズ回答エリアの下にSVGベースの本格そろばんを配置
@@ -488,7 +511,7 @@ html.light .mt-setting-row{border-bottom-color:#dde0ea}
 .mt-quiz-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:var(--text2)}
 .mt-prog-bar{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:14px;overflow:hidden}
 .mt-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent3),var(--blue));border-radius:2px;transition:width .3s}
-.mt-flashcard{background:var(--surface);border:2px solid var(--surface3);border-radius:var(--radius);min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 15px 15px 15px;transition:var(--trans);text-align:center;position:relative;margin-bottom:12px}
+.mt-flashcard{background:var(--surface);border:2px solid var(--surface3);border-radius:var(--radius);min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;transition:var(--trans);text-align:center;position:relative;margin-bottom:12px}
 .mt-flashcard.revealed{border-color:var(--green)}
 .mt-q-text{font-size:clamp(20px,5vw,30px);font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.3}
 .mt-frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.85em;margin:0 3px}
@@ -568,12 +591,26 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
 
 <!-- ══ S0: ユーザー選択 ══ -->
 <div class="screen active" id="s-users">
-  <div class="user-hero">
+  <div class="user-hero" style="position:relative">
+    <button class="theme-toggle" id="user-theme-btn" onclick="toggleTheme()" title="テーマ切替" style="position:absolute;top:0;right:0;padding:8px">🌙</button>
     <h1>📚 StudyDeck</h1>
     <p>学習するユーザーを選んでください</p>
   </div>
   <div class="user-grid" id="user-grid"></div>
-  <div style="margin:8px 16px 20px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);border-left:3px solid var(--accent2);font-size:12px;color:var(--text2);line-height:1.7">
+  <div id="user-gas-setup" style="margin:4px 16px 12px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);border-left:3px solid var(--accent3)">
+    <div style="font-size:12px;font-weight:700;color:var(--accent3);margin-bottom:6px">☁️ GAS連携設定</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input class="gas-url-input" id="user-gas-url-input" type="url"
+        placeholder="GAS Web App URL（任意）"
+        style="flex:1;font-size:12px;padding:7px 10px"
+        oninput="onUserGasUrlInput()"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();connectGasFromUsers();}">
+      <button class="btn btn-info btn-sm" onclick="connectGasFromUsers()" style="white-space:nowrap;flex-shrink:0">接続</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearGasFromUsers()" style="white-space:nowrap;flex-shrink:0;display:none" id="user-gas-clear-btn">クリア</button>
+    </div>
+    <p style="font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5">URLを入力してEnterまたは「接続」でユーザー一覧がクラウドと同期されます</p>
+  </div>
+  <div style="margin:0 16px 20px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);border-left:3px solid var(--accent2);font-size:12px;color:var(--text2);line-height:1.7">
     <div style="font-weight:700;color:var(--accent2);margin-bottom:6px">⚠️ ご利用にあたって</div>
     このアプリは開発者が個人利用目的で開発したツールです。勝手に機能・仕様変更し、それに伴い不具合が発生したり、予告なく公開終了する可能性があります。<b>ご利用は自己責任でお願いします。</b><br>
     データの保証はできません（データは開発者側にはありません）。大切な情報は<b>定期的にご自身でバックアップ</b>してください。<br>
@@ -586,6 +623,8 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
   <div class="hdr">
     <span class="hdr-title" id="home-user-name">ホーム</span>
     <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="テーマ切替">🌙</button>
+    <button class="hdr-btn" onclick="syncProgressUp()" title="成績をアップロード" style="padding:6px 10px;font-size:16px">↑</button>
+    <button class="hdr-btn" onclick="syncProgressDown()" title="成績をダウンロード" style="padding:6px 10px;font-size:16px">↓</button>
     <button class="hdr-btn" onclick="showScreen('s-users')">切替</button>
   </div>
   <div id="home-tab-content" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
@@ -614,32 +653,25 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
     <!-- タブ: 設定 -->
     <div id="tab-settings" style="flex:1;overflow:hidden;display:none;flex-direction:column">
       <div class="scroll" id="settings-content">
-        <div class="section-title">テーマ</div>
-        <div class="card" style="margin-bottom:12px">
-          <div style="display:flex;gap:10px">
-            <button class="btn btn-secondary btn-sm" id="btn-dark" onclick="setTheme('dark')">🌙 ダーク</button>
-            <button class="btn btn-secondary btn-sm" id="btn-light" onclick="setTheme('light')">☀️ ライト</button>
-          </div>
-        </div>
         <div class="section-title">GAS連携設定</div>
         <div class="card" style="margin-bottom:12px">
           <div class="gas-url-label">GAS Web App URL</div>
           <input class="gas-url-input" id="gas-url-input" type="url"
             placeholder="https://script.google.com/macros/s/xxxxx/exec"
-            oninput="onGasUrlInput()">
-          <p style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.6">GASをデプロイして取得したURLを貼り付けてください</p>
+            oninput="onGasUrlInput()"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();saveGasUrl();}">
+          <p style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.6">GASをデプロイして取得したURLを貼り付けてください。「接続」するとユーザー一覧も同期されます。</p>
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn btn-info btn-sm" onclick="saveGasUrl()">保存</button>
-            <button class="btn btn-secondary btn-sm" onclick="pingGas()">接続テスト</button>
+            <button class="btn btn-info btn-sm" onclick="saveGasUrl()">接続</button>
             <button class="btn btn-secondary btn-sm" onclick="clearGasUrl()">クリア</button>
           </div>
         </div>
         <div class="section-title">クラウド同期</div>
         <div class="card" style="margin-bottom:12px">
-          <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6">成績データ（グループのユーザー一覧を含む）をGASスプレッドシートに同期します。<br>複数端末で成績を共有できます。</p>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6">成績データ（グループのユーザー一覧を含む）をGASスプレッドシートに同期します。<br>複数端末で成績を共有できます。<br><span style="font-size:12px;color:var(--text3)">ヘッダーの ↑ ↓ ボタンから操作できます。</span></p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-success btn-sm" onclick="syncProgressUp()">⬆ 成績をアップロード</button>
-            <button class="btn btn-info btn-sm" onclick="syncProgressDown()">⬇ 成績をダウンロード</button>
+            <button class="btn btn-success btn-sm" onclick="syncProgressUp()">⬆ アップロード</button>
+            <button class="btn btn-info btn-sm" onclick="syncProgressDown()">⬇ ダウンロード</button>
           </div>
         </div>
         <div class="section-title">参照リンクの開き方</div>
@@ -1299,6 +1331,11 @@ function init(){
   try{ state.users = JSON.parse(localStorage.getItem(LS_USERS)||'[]'); }catch{ state.users=[]; }
   try{ state.decks = JSON.parse(localStorage.getItem(LS_DECKS)||'[]'); }catch{ state.decks=[]; }
   state.gasUrl = localStorage.getItem(LS_GAS_URL)||'';
+  // ユーザー画面のGAS入力欄に保存済みURLを反映
+  const userInput = document.getElementById('user-gas-url-input');
+  if(userInput) userInput.value = state.gasUrl;
+  const userClearBtn = document.getElementById('user-gas-clear-btn');
+  if(userClearBtn) userClearBtn.style.display = state.gasUrl ? '' : 'none';
   renderUserGrid();
   if(state.users.length===0) addUser('ユーザー1','🐶','#4ecdc4');
   initLinkScheme();
@@ -2932,31 +2969,100 @@ function saveGasUrl(){
   if(!url){ toast('URLを入力してください'); return; }
   state.gasUrl = url;
   localStorage.setItem(LS_GAS_URL, url);
+  // ユーザー画面の入力欄にも反映
+  const userInput = document.getElementById('user-gas-url-input');
+  if(userInput) userInput.value = url;
+  const clearBtn = document.getElementById('user-gas-clear-btn');
+  if(clearBtn) clearBtn.style.display = '';
   toast('GAS URLを保存しました');
-  pingGas();
+  // 接続テスト + ユーザー一覧同期 + オンラインデッキ取得
+  syncUsersFromGas().then(()=>{ fetchOnlineDecks(); });
 }
 function clearGasUrl(){
   state.gasUrl='';
   localStorage.removeItem(LS_GAS_URL);
   document.getElementById('gas-url-input').value='';
+  const userInput = document.getElementById('user-gas-url-input');
+  if(userInput) userInput.value = '';
+  const clearBtn = document.getElementById('user-gas-clear-btn');
+  if(clearBtn) clearBtn.style.display = 'none';
   setGasStatus('off');
   document.getElementById('online-deck-list').innerHTML=
     '<p style="font-size:13px;color:var(--text3)">GAS URLを設定すると表示されます</p>';
   toast('GAS URLをクリアしました');
 }
 
-// ── 接続テスト ──
-async function pingGas(){
-  if(!state.gasUrl){ toast('URLが設定されていません'); return; }
-  setGasStatus('wait'); toast('接続確認中…');
+// ── ユーザー画面のGAS設定 ──
+function onUserGasUrlInput(){
+  const v = document.getElementById('user-gas-url-input').value.trim();
+  const clearBtn = document.getElementById('user-gas-clear-btn');
+  if(clearBtn) clearBtn.style.display = v ? '' : 'none';
+}
+
+async function connectGasFromUsers(){
+  const url = document.getElementById('user-gas-url-input').value.trim();
+  if(!url){ toast('URLを入力してください'); return; }
+  state.gasUrl = url;
+  localStorage.setItem(LS_GAS_URL, url);
+  const settingsInput = document.getElementById('gas-url-input');
+  if(settingsInput) settingsInput.value = url;
+  const clearBtn = document.getElementById('user-gas-clear-btn');
+  if(clearBtn) clearBtn.style.display = '';
+  toast('接続中…');
+  await syncUsersFromGas();
+}
+
+function clearGasFromUsers(){
+  state.gasUrl='';
+  localStorage.removeItem(LS_GAS_URL);
+  document.getElementById('user-gas-url-input').value='';
+  const clearBtn = document.getElementById('user-gas-clear-btn');
+  if(clearBtn) clearBtn.style.display = 'none';
+  const settingsInput = document.getElementById('gas-url-input');
+  if(settingsInput) settingsInput.value = '';
+  setGasStatus('off');
+  toast('GAS URLをクリアしました');
+}
+
+// ── GASからユーザー一覧を取得してマージ ──
+async function syncUsersFromGas(){
+  if(!state.gasUrl) return;
+  setGasStatus('wait');
   try{
     const r = await gasGet({action:'ping'});
-    if(r.ok){
-      setGasStatus('ok');
-      toast('✅ GASに接続できました');
-      fetchOnlineDecks();
-    } else { setGasStatus('err'); toast('❌ GASエラー: '+r.error); }
+    if(!r.ok){ setGasStatus('err'); toast('❌ GAS接続失敗: '+(r.error||'不明なエラー')); return; }
+    setGasStatus('ok');
+    const ur = await gasGet({action:'getUsers'}).catch(()=>null);
+    if(ur && ur.ok && Array.isArray(ur.users) && ur.users.length){
+      let changed = false;
+      ur.users.forEach(gu=>{
+        const local = state.users.find(u=>u.id===gu.id);
+        if(!local){
+          state.users.push(gu);
+          changed = true;
+        } else if(local.name !== gu.name || local.icon !== gu.icon || local.color !== gu.color){
+          local.name  = gu.name;
+          local.icon  = gu.icon  || local.icon;
+          local.color = gu.color || local.color;
+          changed = true;
+        }
+      });
+      if(changed){
+        saveUsers();
+        renderUserGrid();
+        toast('✅ 接続成功 · ユーザー一覧を同期しました');
+      } else {
+        toast('✅ GASに接続しました');
+      }
+    } else {
+      toast('✅ GASに接続しました');
+    }
   }catch(e){ setGasStatus('err'); toast('❌ 接続失敗: '+e.message); }
+}
+
+// ── 旧接続テスト（内部利用のみ残す） ──
+async function pingGas(){
+  return syncUsersFromGas();
 }
 
 // ── ステータス表示 ──
@@ -3180,13 +3286,11 @@ const LS_THEME = 'sd_theme';
 
 function applyTheme(theme){
   document.documentElement.classList.toggle('light', theme==='light');
+  const icon = theme==='light' ? '☀️' : '🌙';
   const btn = document.getElementById('theme-btn');
-  if(btn) btn.textContent = theme==='light' ? '☀️' : '🌙';
-  // アクティブボタン強調
-  ['dark','light'].forEach(t=>{
-    const b=document.getElementById('btn-'+t);
-    if(b) b.style.borderColor = t===theme ? 'var(--accent3)' : 'transparent';
-  });
+  if(btn) btn.textContent = icon;
+  const userBtn = document.getElementById('user-theme-btn');
+  if(userBtn) userBtn.textContent = icon;
   // theme-colorメタも更新
   const meta=document.querySelector('meta[name="theme-color"]');
   if(meta) meta.content = theme==='light'?'#ffffff':'#1a1a2e';
@@ -3787,7 +3891,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
   const TEII      = new Set([5, 2]);
 
   // ── ミニプレビュー定数（1/3スケール相当） ──
-  const MINI_SCALE = 0.25;
+  const MINI_SCALE = 0.20;
 
   // ── state ──
   const upper  = new Array(COLS).fill(false); // 五玉: true=梁側
@@ -3876,7 +3980,7 @@ document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
       }
 
       // 桁ラベル
-      const labels=['厘','分','一','十','百','千','万','十万'];
+      const labels=['一','十','百','千','万','十万','百万','千万'];
       const t = el('text',{x:cx,y:TOTAL_H-2,'text-anchor':'middle','font-size':'8',fill:C.text,'font-family':'Hiragino Sans,sans-serif'},svgEl);
       t.textContent = labels[COLS-1-c]||'';
 
