@@ -3,11 +3,25 @@
 =======================================================
   StudyDeck 変更履歴
 =======================================================
-[v43] ユーザー選択画面UX改善・GAS設定UX改善・ヘッダー同期ボタン追加・設定画面整理
+[v44] ウェルカム画面廃止・設定タブにユーザー選択を統合
+
+  ① ウェルカム画面（ユーザー選択画面）を廃止
+     - アプリ起動時は設定タブを直接表示
+     - ヘッダーの「切替」ボタンを廃止
+
+  ② 設定タブにユーザー選択を追加
+     - 「⚠️ ご利用にあたって」折りたたみアコーディオン（最初は折りたたまれた状態）
+     - コンパクトなユーザー選択グリッド（⋯ボタンで名前変更・削除）
+     - GAS連携設定（従来どおり）
+     - ユーザーを選択するとデッキタブへ自動遷移
+
+[v44] ユーザー選択画面UX改善
 
   ① GAS URL入力欄でEnterキーを押すと接続（ユーザー画面・設定タブ両方）
   ② ユーザー選択画面のGAS設定欄をユーザーグリッドの下に移動
   ③ ユーザー選択画面にテーマ切替ボタン（🌙）を追加（右上）
+
+[v43] GAS設定UX改善・ヘッダー同期ボタン追加・設定画面整理
 
   ① ユーザー選択画面にGAS設定欄を追加
      - URLを入力して「接続」するだけでGAS連携が完了
@@ -584,48 +598,38 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
 .soroban-mini-wrap{position:absolute;top:6px;left:6px;pointer-events:none;opacity:0.85;z-index:2}
 #soroban-mini-svg{display:block}
 
+
+/* ── コンパクトユーザーグリッド（設定タブ内） ── */
+.user-grid-compact{display:flex;flex-wrap:wrap;gap:8px}
+.user-tile-compact{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:2px solid transparent;cursor:pointer;transition:var(--trans);flex:1;min-width:140px;position:relative}
+.user-tile-compact:active{transform:scale(.97)}
+.user-tile-compact.selected{border-color:var(--accent3)}
+.utc-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.utc-info{flex:1;min-width:0}
+.utc-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.utc-stats{font-size:10px;color:var(--text3)}
+.utc-edit{background:none;border:none;font-size:13px;cursor:pointer;padding:2px 4px;opacity:0.6;flex-shrink:0;line-height:1}
+.user-add-compact{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:2px dashed var(--surface3);cursor:pointer;transition:var(--trans);min-width:80px;justify-content:center;color:var(--text3);font-size:13px;font-weight:600}
+.user-add-compact:active{transform:scale(.97)}
+
+/* ── 注意書きアコーディオン ── */
+.notice-accordion{margin-bottom:4px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid rgba(245,166,35,.3)}
+.notice-header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(245,166,35,.08);border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:var(--accent2);text-align:left;gap:8px}
+.notice-header:active{opacity:.8}
+.notice-body{padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.7;background:var(--surface2)}
+
 </style>
 </head>
 <body>
 <div id="app">
 
-<!-- ══ S0: ユーザー選択 ══ -->
-<div class="screen active" id="s-users">
-  <div class="user-hero" style="position:relative">
-    <button class="theme-toggle" id="user-theme-btn" onclick="toggleTheme()" title="テーマ切替" style="position:absolute;top:0;right:0;padding:8px">🌙</button>
-    <h1>📚 StudyDeck</h1>
-    <p>学習するユーザーを選んでください</p>
-  </div>
-  <div class="user-grid" id="user-grid"></div>
-  <div id="user-gas-setup" style="margin:4px 16px 12px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);border-left:3px solid var(--accent3)">
-    <div style="font-size:12px;font-weight:700;color:var(--accent3);margin-bottom:6px">☁️ GAS連携設定</div>
-    <div style="display:flex;gap:6px;align-items:center">
-      <input class="gas-url-input" id="user-gas-url-input" type="url"
-        placeholder="GAS Web App URL（任意）"
-        style="flex:1;font-size:12px;padding:7px 10px"
-        oninput="onUserGasUrlInput()"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();connectGasFromUsers();}">
-      <button class="btn btn-info btn-sm" onclick="connectGasFromUsers()" style="white-space:nowrap;flex-shrink:0">接続</button>
-      <button class="btn btn-secondary btn-sm" onclick="clearGasFromUsers()" style="white-space:nowrap;flex-shrink:0;display:none" id="user-gas-clear-btn">クリア</button>
-    </div>
-    <p style="font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5">URLを入力してEnterまたは「接続」でユーザー一覧がクラウドと同期されます</p>
-  </div>
-  <div style="margin:0 16px 20px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);border-left:3px solid var(--accent2);font-size:12px;color:var(--text2);line-height:1.7">
-    <div style="font-weight:700;color:var(--accent2);margin-bottom:6px">⚠️ ご利用にあたって</div>
-    このアプリは開発者が個人利用目的で開発したツールです。勝手に機能・仕様変更し、それに伴い不具合が発生したり、予告なく公開終了する可能性があります。<b>ご利用は自己責任でお願いします。</b><br>
-    データの保証はできません（データは開発者側にはありません）。大切な情報は<b>定期的にご自身でバックアップ</b>してください。<br>
-    困ったときは、開発者と個人的なつながりがある方は開発者に直接ご相談ください。<br>なお、使いやすさ向上のために簡単な操作ログ（個人データは含まず、匿名）を収集するかもしれません。
-  </div>
-</div>
-
 <!-- ══ S1: ホーム ══ -->
-<div class="screen" id="s-home">
+<div class="screen active" id="s-home">
   <div class="hdr">
     <span class="hdr-title" id="home-user-name">ホーム</span>
     <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="テーマ切替">🌙</button>
     <button class="hdr-btn" onclick="syncProgressUp()" title="成績をアップロード" style="padding:6px 10px;font-size:16px">↑</button>
     <button class="hdr-btn" onclick="syncProgressDown()" title="成績をダウンロード" style="padding:6px 10px;font-size:16px">↓</button>
-    <button class="hdr-btn" onclick="showScreen('s-users')">切替</button>
   </div>
   <div id="home-tab-content" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
     <!-- タブ: デッキ -->
@@ -653,6 +657,28 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
     <!-- タブ: 設定 -->
     <div id="tab-settings" style="flex:1;overflow:hidden;display:none;flex-direction:column">
       <div class="scroll" id="settings-content">
+
+        <!-- ── 注意書き（折りたたみ） ── -->
+        <div class="notice-accordion" id="notice-accordion">
+          <button class="notice-header" onclick="toggleNotice()" id="notice-toggle-btn">
+            <span>⚠️ ご利用にあたって</span>
+            <span id="notice-chevron" style="font-size:12px;transition:transform .25s">▼</span>
+          </button>
+          <div class="notice-body" id="notice-body" style="display:none">
+            このアプリは開発者が個人利用目的で開発したツールです。勝手に機能・仕様変更し、それに伴い不具合が発生したり、予告なく公開終了する可能性があります。<b>ご利用は自己責任でお願いします。</b><br><br>
+            データの保証はできません（データは開発者側にはありません）。大切な情報は<b>定期的にご自身でバックアップ</b>してください。<br><br>
+            困ったときは、開発者と個人的なつながりがある方は開発者に直接ご相談ください。<br>
+            なお、使いやすさ向上のために簡単な操作ログ（個人データは含まず、匿名）を収集するかもしれません。
+          </div>
+        </div>
+
+        <!-- ── ユーザー選択 ── -->
+        <div class="section-title" style="margin-top:12px">ユーザー</div>
+        <div class="card" style="margin-bottom:12px;padding:12px">
+          <div class="user-grid-compact" id="user-grid"></div>
+        </div>
+
+        <!-- ── GAS連携設定 ── -->
         <div class="section-title">GAS連携設定</div>
         <div class="card" style="margin-bottom:12px">
           <div class="gas-url-label">GAS Web App URL</div>
@@ -1331,13 +1357,10 @@ function init(){
   try{ state.users = JSON.parse(localStorage.getItem(LS_USERS)||'[]'); }catch{ state.users=[]; }
   try{ state.decks = JSON.parse(localStorage.getItem(LS_DECKS)||'[]'); }catch{ state.decks=[]; }
   state.gasUrl = localStorage.getItem(LS_GAS_URL)||'';
-  // ユーザー画面のGAS入力欄に保存済みURLを反映
-  const userInput = document.getElementById('user-gas-url-input');
-  if(userInput) userInput.value = state.gasUrl;
-  const userClearBtn = document.getElementById('user-gas-clear-btn');
-  if(userClearBtn) userClearBtn.style.display = state.gasUrl ? '' : 'none';
-  renderUserGrid();
   if(state.users.length===0) addUser('ユーザー1','🐶','#4ecdc4');
+  // 最初は設定タブを表示
+  showScreen('s-home');
+  switchTab('settings');
   initLinkScheme();
   // タグドロップダウンを外側クリックで閉じる
   document.addEventListener('click', e=>{
@@ -1366,22 +1389,21 @@ function addUser(name, icon, color){
 
 function renderUserGrid(){
   const grid = document.getElementById('user-grid');
+  if(!grid) return;
   const prog = loadProgress();
   grid.innerHTML = state.users.map(u=>{
     const up = prog[u.id]||{};
     const sessions = Object.values(up).reduce((a,d)=>a+(d.sessions||0),0);
-    return `<div class="user-tile" data-uid="${u.id}" onclick="selectAndGo('${u.id}')">
-      <button class="user-edit-btn" onclick="event.stopPropagation();promptRenameUser('${u.id}')" title="名前を変更">✏️</button>
-      <button class="user-del-btn" onclick="event.stopPropagation();promptDeleteUser('${u.id}')" title="削除">🗑️</button>
-      <div class="user-avatar" style="background:${u.color}22;color:${u.color}">${u.icon}</div>
-      <div class="user-name">${u.name}</div>
-      <div class="user-stats">${sessions}セッション</div>
+    return `<div class="user-tile-compact" data-uid="${u.id}" onclick="selectAndGo('${u.id}')">
+      <div class="utc-avatar" style="background:${u.color}22;color:${u.color}">${u.icon}</div>
+      <div class="utc-info">
+        <div class="utc-name">${u.name}</div>
+        <div class="utc-stats">${sessions}セッション</div>
+      </div>
+      <button class="utc-edit" onclick="event.stopPropagation();showUserMenu('${u.id}')" title="操作">⋯</button>
     </div>`;
   }).join('')+
-  `<div class="user-tile user-add" onclick="promptAddUser()">
-    <div class="user-avatar">＋</div>
-    <div class="user-name" style="color:var(--text3)">追加</div>
-  </div>`;
+  `<div class="user-add-compact" onclick="promptAddUser()">＋ 追加</div>`;
   if(state.currentUser) document.querySelector(`[data-uid="${state.currentUser.id}"]`)?.classList.add('selected');
 }
 
@@ -1393,12 +1415,24 @@ function selectTile(uid){
 
 function selectAndGo(uid){
   state.currentUser = state.users.find(u=>u.id===uid);
-  document.querySelectorAll('.user-tile').forEach(t=>t.classList.remove('selected'));
+  document.querySelectorAll('[data-uid]').forEach(t=>t.classList.remove('selected'));
   document.querySelector(`[data-uid="${uid}"]`)?.classList.add('selected');
   // 算数トレーナー設定をユーザーごとにリロード
   const savedCfg=mt_loadCfg();
   if(savedCfg){ mt_cfg=Object.assign(mt_cfg,savedCfg); mt_applySettingsToUI(); }
   selectUser();
+}
+
+function showUserMenu(uid){
+  const user = state.users.find(u=>u.id===uid);
+  if(!user) return;
+  showDialog('ユーザー操作', `「${user.name}」の操作を選択してください`, false, ()=>{}, '');
+  // ダイアログボタンを差し替えて名前変更と削除を提供
+  const btns = document.getElementById('dialog-btns');
+  btns.innerHTML = `
+    <button class="btn btn-secondary btn-full" onclick="closeDialog();promptRenameUser('${uid}')">✏️ 名前を変更</button>
+    <button class="btn btn-danger btn-full" style="margin-top:6px" onclick="closeDialog();promptDeleteUser('${uid}')">🗑️ 削除</button>
+    <button class="btn btn-secondary btn-full" style="margin-top:6px" onclick="closeDialog()">キャンセル</button>`;
 }
 
 function promptRenameUser(uid){
@@ -1445,6 +1479,7 @@ function selectUser(){
   document.getElementById('home-user-name').textContent = state.currentUser.icon+' '+state.currentUser.name;
   renderDeckList();
   showScreen('s-home');
+  switchTab('decks');
   // GAS URL が設定済みならオンラインデッキを取得
   if(state.gasUrl) fetchOnlineDecks();
   renderSyncBar();
@@ -2539,6 +2574,7 @@ function switchTab(tab){
   if(tab==='settings'){
     const ui=document.getElementById('gas-url-input');
     if(ui) ui.value=state.gasUrl||'';
+    renderUserGrid();
   }
   if(tab==='math'){
     // GASバナー表示切替
@@ -2922,6 +2958,15 @@ function openCardDetail(cardId){
   document.getElementById('card-detail-overlay').classList.add('show');
 }
 
+function toggleNotice(){
+  const body = document.getElementById('notice-body');
+  const chevron = document.getElementById('notice-chevron');
+  if(!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if(chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+}
+
 function confirmReset(){
   showDialog('成績をリセット','全ての学習進捗を削除しますか？この操作は取り消せません',false,(ok)=>{
     if(!ok) return;
@@ -2969,11 +3014,6 @@ function saveGasUrl(){
   if(!url){ toast('URLを入力してください'); return; }
   state.gasUrl = url;
   localStorage.setItem(LS_GAS_URL, url);
-  // ユーザー画面の入力欄にも反映
-  const userInput = document.getElementById('user-gas-url-input');
-  if(userInput) userInput.value = url;
-  const clearBtn = document.getElementById('user-gas-clear-btn');
-  if(clearBtn) clearBtn.style.display = '';
   toast('GAS URLを保存しました');
   // 接続テスト + ユーザー一覧同期 + オンラインデッキ取得
   syncUsersFromGas().then(()=>{ fetchOnlineDecks(); });
@@ -2982,45 +3022,9 @@ function clearGasUrl(){
   state.gasUrl='';
   localStorage.removeItem(LS_GAS_URL);
   document.getElementById('gas-url-input').value='';
-  const userInput = document.getElementById('user-gas-url-input');
-  if(userInput) userInput.value = '';
-  const clearBtn = document.getElementById('user-gas-clear-btn');
-  if(clearBtn) clearBtn.style.display = 'none';
   setGasStatus('off');
   document.getElementById('online-deck-list').innerHTML=
     '<p style="font-size:13px;color:var(--text3)">GAS URLを設定すると表示されます</p>';
-  toast('GAS URLをクリアしました');
-}
-
-// ── ユーザー画面のGAS設定 ──
-function onUserGasUrlInput(){
-  const v = document.getElementById('user-gas-url-input').value.trim();
-  const clearBtn = document.getElementById('user-gas-clear-btn');
-  if(clearBtn) clearBtn.style.display = v ? '' : 'none';
-}
-
-async function connectGasFromUsers(){
-  const url = document.getElementById('user-gas-url-input').value.trim();
-  if(!url){ toast('URLを入力してください'); return; }
-  state.gasUrl = url;
-  localStorage.setItem(LS_GAS_URL, url);
-  const settingsInput = document.getElementById('gas-url-input');
-  if(settingsInput) settingsInput.value = url;
-  const clearBtn = document.getElementById('user-gas-clear-btn');
-  if(clearBtn) clearBtn.style.display = '';
-  toast('接続中…');
-  await syncUsersFromGas();
-}
-
-function clearGasFromUsers(){
-  state.gasUrl='';
-  localStorage.removeItem(LS_GAS_URL);
-  document.getElementById('user-gas-url-input').value='';
-  const clearBtn = document.getElementById('user-gas-clear-btn');
-  if(clearBtn) clearBtn.style.display = 'none';
-  const settingsInput = document.getElementById('gas-url-input');
-  if(settingsInput) settingsInput.value = '';
-  setGasStatus('off');
   toast('GAS URLをクリアしました');
 }
 
@@ -3289,8 +3293,6 @@ function applyTheme(theme){
   const icon = theme==='light' ? '☀️' : '🌙';
   const btn = document.getElementById('theme-btn');
   if(btn) btn.textContent = icon;
-  const userBtn = document.getElementById('user-theme-btn');
-  if(userBtn) userBtn.textContent = icon;
   // theme-colorメタも更新
   const meta=document.querySelector('meta[name="theme-color"]');
   if(meta) meta.content = theme==='light'?'#ffffff':'#1a1a2e';
