@@ -3,6 +3,13 @@
 =======================================================
   StudyDeck 変更履歴
 =======================================================
+[v45] 算数クイズの「確認」ボタンを「次の問題」に転用
+
+  ① 「確認」を押して採点後、同ボタンが「次の問題 →」に変化
+     - 最後の問題では「結果を見る ✓」に変化
+     - 次の問題表示時に「確認」に戻る
+  ② カード下の「次の問題 →」専用ボタンを廃止
+
 [v44] ウェルカム画面廃止・設定タブにユーザー選択を統合
 
   ① ウェルカム画面（ユーザー選択画面）を廃止
@@ -856,10 +863,8 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
             </div>
           </div>
           <!-- ボタン（そろばんの上） -->
-          <div style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:6px;display:none" id="mt-reveal-hint">次の問題へ進むか、終了できます</div>
           <div class="mt-quiz-btns">
             <button class="mt-btn-quit" onclick="mt_quitQuiz()">終了</button>
-            <button class="mt-btn-next" id="mt-nextBtn" onclick="mt_nextQuestion()" disabled>次の問題 →</button>
           </div>
           <!-- そろばん（ボタンの下・大きく表示） -->
           <div class="soroban-outer">
@@ -3662,10 +3667,10 @@ function mt_showQuestion(){
   document.getElementById('mt-judge-result').className='mt-judge-result';
   document.getElementById('mt-judge-result').textContent='';
   document.getElementById('mt-correct-reveal').style.display='none';
-  document.getElementById('mt-judgeBtn').disabled=false;
-  document.getElementById('mt-reveal-hint').style.display='none';
-  document.getElementById('mt-nextBtn').disabled=true;
-  document.getElementById('mt-nextBtn').textContent='次の問題 →';
+  const judgeBtn=document.getElementById('mt-judgeBtn');
+  judgeBtn.disabled=true;
+  judgeBtn.textContent='確認';
+  judgeBtn.onclick=mt_judgeAnswer;
   document.getElementById('mt-q-text').innerHTML=q.html+'<span style="color:var(--text2)"> ＝ ？</span>';
   document.getElementById('mt-q-counter').textContent=`${idx+1} / ${mt_session.questions.length}`;
   document.getElementById('mt-q-progress').style.width=`${(idx/mt_session.questions.length)*100}%`;
@@ -3701,11 +3706,10 @@ function mt_judgeAnswer(){
     revEl.style.display='block'; revEl.textContent=`正解: ${q.answerText}`;
   }
   inp.disabled=true;
-  document.getElementById('mt-judgeBtn').disabled=true;
-  document.getElementById('mt-reveal-hint').style.display='block';
-  document.getElementById('mt-nextBtn').disabled=false;
-  if(mt_session.current>=mt_session.questions.length-1)
-    document.getElementById('mt-nextBtn').textContent='結果を見る ✓';
+  const judgeBtn=document.getElementById('mt-judgeBtn');
+  const isLast=mt_session.current>=mt_session.questions.length-1;
+  judgeBtn.textContent=isLast?'結果を見る ✓':'次の問題 →';
+  judgeBtn.onclick=mt_nextQuestion;
 }
 function mt_nextQuestion(){
   if(!mt_session) return;
@@ -3861,6 +3865,10 @@ document.addEventListener('keydown',e=>{
 });
 document.getElementById('mt-ans-input')?.addEventListener('keydown',e=>{
   if(e.key==='Enter') mt_judgeAnswer();
+});
+document.getElementById('mt-ans-input')?.addEventListener('input',e=>{
+  const judgeBtn=document.getElementById('mt-judgeBtn');
+  if(judgeBtn&&judgeBtn.textContent==='確認') judgeBtn.disabled=!e.target.value.trim();
 });
 
 // ─── そろばん（SVGベース本格版）───
