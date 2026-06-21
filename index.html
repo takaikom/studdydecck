@@ -5,7 +5,7 @@
 =======================================================
 [v45] 算数クイズの「確認」ボタンを「次の問題」に転用
 
-  ① 「確認」を押して採点後、同ボタンが「次の問題 →」に変化
+  ① 「確認」を押して採点後、同ボタンが「次の問題」に変化
      - 最後の問題では「結果を見る ✓」に変化
      - 次の問題表示時に「確認」に戻る
   ② カード下の「次の問題 →」専用ボタンを廃止
@@ -3708,7 +3708,7 @@ function mt_judgeAnswer(){
   inp.disabled=true;
   const judgeBtn=document.getElementById('mt-judgeBtn');
   const isLast=mt_session.current>=mt_session.questions.length-1;
-  judgeBtn.textContent=isLast?'結果を見る ✓':'次の問題 →';
+  judgeBtn.textContent=isLast?'結果を見る ✓':'次の問題';
   judgeBtn.onclick=mt_nextQuestion;
 }
 function mt_nextQuestion(){
