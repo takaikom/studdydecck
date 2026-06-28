@@ -893,7 +893,7 @@ html.light .mt-detail-table td{border-bottom-color:#eee}
           <!-- ボタン（そろばんの上）：終了・リセットを同じ行に -->
           <div class="mt-quiz-btns">
             <button class="mt-btn-quit" onclick="mt_quitQuiz()">終了</button>
-            <button class="soroban-reset-btn" onclick="soroban_reset()">リセット</button>
+            <button class="soroban-reset-btn" onmousedown="event.preventDefault()" onclick="soroban_reset()">リセット</button>
           </div>
           <!-- そろばん -->
           <div class="soroban-outer">
